@@ -45,17 +45,17 @@ function AppointmentList({ filter }: { filter: string }) {
   return (
     <div className="space-y-4">
       {filteredAppointments?.map((appointment) => (
-        <Card key={appointment.id}>
+        <Card key={appointment.id} className="hover:shadow-md transition-shadow">
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
               <div className="space-y-2">
-                <h3 className="font-medium">{appointment.type}</h3>
+                <h3 className="font-medium text-lg">{appointment.type}</h3>
                 <p className="text-sm text-muted-foreground">
-                  {formatDateTime(appointment.datetime)}
+                  Scheduled for: {formatDateTime(appointment.datetime)}
                 </p>
                 {appointment.consultationDetails?.description && (
                   <p className="text-sm text-muted-foreground max-w-md">
-                    Details: {appointment.consultationDetails.description}
+                    Client's Request: {appointment.consultationDetails.description}
                   </p>
                 )}
                 <p className="text-sm">
@@ -94,6 +94,12 @@ function AppointmentList({ filter }: { filter: string }) {
           </CardContent>
         </Card>
       ))}
+
+      {filteredAppointments?.length === 0 && (
+        <div className="text-center py-8 text-muted-foreground">
+          No {filter} consultations found
+        </div>
+      )}
     </div>
   );
 }
@@ -104,9 +110,13 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+        </div>
+
         <Card className="border-none shadow-none">
           <CardHeader>
-            <CardTitle>Consultation Requests</CardTitle>
+            <CardTitle className="text-2xl">Consultation Requests</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -116,32 +126,41 @@ export default function Dashboard() {
                   className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
                 >
                   <Clock className="w-4 h-4 mr-2" />
-                  Pending
+                  Pending Requests
                 </TabsTrigger>
                 <TabsTrigger 
                   value="paid"
                   className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
                 >
                   <DollarSign className="w-4 h-4 mr-2" />
-                  Paid
+                  Paid Consultations
                 </TabsTrigger>
                 <TabsTrigger 
                   value="completed"
                   className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  Completed
+                  Completed Sessions
                 </TabsTrigger>
               </TabsList>
 
-              <div className="mt-4">
+              <div className="mt-6">
                 <TabsContent value="pending">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-medium text-muted-foreground">New consultation requests awaiting your review</h2>
+                  </div>
                   <AppointmentList filter="pending" />
                 </TabsContent>
                 <TabsContent value="paid">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-medium text-muted-foreground">Consultations ready to be conducted</h2>
+                  </div>
                   <AppointmentList filter="paid" />
                 </TabsContent>
                 <TabsContent value="completed">
+                  <div className="mb-4">
+                    <h2 className="text-lg font-medium text-muted-foreground">History of completed consultations</h2>
+                  </div>
                   <AppointmentList filter="completed" />
                 </TabsContent>
               </div>

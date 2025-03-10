@@ -33,11 +33,11 @@ const NavigationContent = () => (
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-gray-50">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r">
-        <div className="p-6">
-          <h2 className="text-lg font-semibold">Dashboard</h2>
+      <aside className="hidden md:flex w-64 flex-col bg-white border-r">
+        <div className="p-6 border-b">
+          <h1 className="text-2xl font-bold text-primary">Practitioner Portal</h1>
         </div>
         <NavigationContent />
       </aside>
@@ -51,15 +51,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </SheetTrigger>
         <SheetContent side="left" className="w-64">
           <div className="py-6">
-            <h2 className="text-lg font-semibold mb-4">Dashboard</h2>
+            <h1 className="text-2xl font-bold text-primary mb-6">Practitioner Portal</h1>
             <NavigationContent />
           </div>
         </SheetContent>
       </Sheet>
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-8 pt-16 md:pt-8">
-        {children}
+      <main className="flex-1 overflow-y-auto">
+        <div className="h-16 bg-white border-b md:h-20">
+          <div className="px-4 h-full flex items-center max-w-7xl mx-auto">
+            <h2 className="text-xl font-semibold md:hidden">Practitioner Portal</h2>
+          </div>
+        </div>
+        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+          {children}
+        </div>
       </main>
     </div>
   );
