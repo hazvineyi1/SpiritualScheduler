@@ -28,7 +28,7 @@ export default function Booking() {
     resolver: zodResolver(insertAppointmentSchema),
     defaultValues: {
       clientId: 1, // TODO: Get from auth
-      datetime: "",
+      datetime: new Date().toISOString(),
       duration: 60, // Fixed duration
       type: "divination",
       consultationDetails: { description: "" }
@@ -37,13 +37,16 @@ export default function Booking() {
 
   const createAppointment = useMutation({
     mutationFn: async (data: InsertAppointment) => {
+      console.log("Submitting appointment data:", data);
       const res = await apiRequest("POST", "/api/appointments", data);
       return res.json();
     },
     onSuccess: () => {
+      console.log("Appointment created successfully");
       setStep(BookingStep.PAYMENT);
     },
     onError: (error: Error) => {
+      console.error("Appointment creation failed:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to book appointment. Please try again.",
@@ -52,7 +55,7 @@ export default function Booking() {
     }
   });
 
-  async function onSubmit(data: InsertAppointment) {
+  const onSubmit = async (formData: InsertAppointment) => {
     if (!selectedDate) {
       toast({
         title: "Select Date",
@@ -63,14 +66,16 @@ export default function Booking() {
     }
 
     try {
-      await createAppointment.mutateAsync({
-        ...data,
-        datetime: selectedDate.toISOString()
-      });
+      const appointmentData = {
+        ...formData,
+        datetime: selectedDate.toISOString(),
+      };
+      console.log("Submitting appointment:", appointmentData);
+      await createAppointment.mutateAsync(appointmentData);
     } catch (error) {
-      console.error("Appointment creation failed:", error);
+      console.error("Form submission failed:", error);
     }
-  }
+  };
 
   if (step === BookingStep.PAYMENT) {
     return (

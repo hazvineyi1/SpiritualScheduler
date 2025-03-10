@@ -43,13 +43,18 @@ export const insertUserSchema = createInsertSchema(users).pick({
   role: true,
 });
 
-export const insertAppointmentSchema = createInsertSchema(appointments).pick({
-  clientId: true,
-  datetime: true,
-  duration: true,
-  type: true,
-  consultationDetails: true,
-});
+export const insertAppointmentSchema = createInsertSchema(appointments)
+  .extend({
+    datetime: z.string(), // Accept ISO string format
+  })
+  .pick({
+    clientId: true,
+    datetime: true,
+    duration: true,
+    type: true,
+    consultationDetails: true,
+  })
+  .partial({ clientId: true }); // Make clientId optional for now
 
 export const insertPaymentSchema = createInsertSchema(payments).pick({
   appointmentId: true,
