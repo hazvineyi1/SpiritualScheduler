@@ -34,7 +34,7 @@ export default function Booking() {
       datetime: new Date().toISOString(),
       duration: 60,
       type: "divination",
-      phoneNumber: "", // Added phone number field
+      phoneNumber: "",
       consultationDetails: { description: "" }
     }
   });
@@ -45,12 +45,10 @@ export default function Booking() {
       return res.json();
     },
     onSuccess: (data) => {
-      console.log("Appointment created successfully");
       setAppointmentId(data.id);
       setStep(BookingStep.PAYMENT);
     },
     onError: (error: Error) => {
-      console.error("Appointment creation failed:", error);
       toast({
         title: "Error",
         description: error.message || "Failed to book appointment. Please try again.",
@@ -74,7 +72,6 @@ export default function Booking() {
         ...formData,
         datetime: selectedDate.toISOString(),
       };
-      console.log("Submitting appointment:", appointmentData);
       await createAppointment.mutateAsync(appointmentData);
     } catch (error) {
       console.error("Form submission failed:", error);
@@ -95,7 +92,6 @@ export default function Booking() {
       description: (
         <div className="flex items-center gap-2">
           <Input 
-            type="text" 
             value={shareableLink} 
             readOnly 
             className="flex-1 bg-muted px-2 py-1 rounded text-sm"
@@ -115,7 +111,7 @@ export default function Booking() {
           </Button>
         </div>
       ),
-      duration: 10000, // Show for 10 seconds
+      duration: 10000,
     });
 
     // Reset form and state
@@ -130,7 +126,7 @@ export default function Booking() {
       <div className="container mx-auto px-4 py-8">
         <PaymentForm
           appointmentId={appointmentId}
-          amount={50} // Fixed amount for now
+          amount={50}
           onSuccess={handlePaymentSuccess}
         />
       </div>
@@ -159,7 +155,7 @@ export default function Booking() {
                     <FormLabel>Phone Number</FormLabel>
                     <FormControl>
                       <Input 
-                        {...field} 
+                        {...field}
                         type="tel"
                         placeholder="Enter your phone number (e.g. +263...)" 
                       />
@@ -202,9 +198,8 @@ export default function Booking() {
                     <FormLabel>Consultation Details</FormLabel>
                     <FormControl>
                       <Input 
-                        {...field} 
-                        type="text"
-                        placeholder="Briefly describe your needs" 
+                        {...field}
+                        placeholder="Briefly describe your needs"
                       />
                     </FormControl>
                     <FormMessage />
