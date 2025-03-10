@@ -17,6 +17,7 @@ export const appointments = pgTable("appointments", {
   type: text("type").notNull(), // divination, guidance, ancestral
   status: text("status").notNull().default("pending"), // pending, confirmed, completed, cancelled
   paymentStatus: text("payment_status").notNull().default("pending"),
+  phoneNumber: text("phone_number").notNull(), // Added phone number field
   consultationDetails: json("consultation_details").$type<{
     description?: string;
     audioUrl?: string;
@@ -32,7 +33,7 @@ export const payments = pgTable("payments", {
   amount: integer("amount").notNull(),
   currency: text("currency").notNull(),
   method: text("method").notNull(), // ecocash, western_union, etc
-  status: text("status").notNull(),
+  status: text("status").notNull().default("pending"),
   reference: text("reference"),
 });
 
@@ -46,12 +47,16 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertAppointmentSchema = createInsertSchema(appointments)
   .extend({
     datetime: z.string(), // Accept ISO string format
+    phoneNumber: z.string()
+      .min(10, "Phone number must be at least 10 digits")
+      .regex(/^\+?[0-9]+$/, "Must be a valid phone number"),
   })
   .pick({
     clientId: true,
     datetime: true,
     duration: true,
     type: true,
+    phoneNumber: true,
     consultationDetails: true,
   })
   .partial({ clientId: true }); // Make clientId optional for now

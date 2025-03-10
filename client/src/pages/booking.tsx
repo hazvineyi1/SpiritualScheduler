@@ -32,8 +32,9 @@ export default function Booking() {
     defaultValues: {
       clientId: 1, // TODO: Get from auth
       datetime: new Date().toISOString(),
-      duration: 60, // Fixed duration
+      duration: 60,
       type: "divination",
+      phoneNumber: "", // Added phone number field
       consultationDetails: { description: "" }
     }
   });
@@ -148,6 +149,24 @@ export default function Booking() {
               <BookingCalendar 
                 selected={selectedDate}
                 onSelect={setSelectedDate}
+              />
+
+              <FormField
+                control={form.control}
+                name="phoneNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input 
+                        {...field} 
+                        type="tel"
+                        placeholder="Enter your phone number (e.g. +263...)" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
 
               <FormField
