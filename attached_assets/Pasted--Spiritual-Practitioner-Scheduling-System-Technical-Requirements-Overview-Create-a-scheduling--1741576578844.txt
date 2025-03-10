@@ -1,0 +1,63 @@
+# Spiritual Practitioner Scheduling System: Technical Requirements
+
+## Overview
+Create a scheduling platform for a Zimbabwean spiritual practitioner that streamlines client booking, payment verification, consultation preparation, and appointment management while integrating with WhatsApp notifications.
+
+## Core Functionality
+
+### Client Booking Process
+- Interactive calendar showing practitioner's availability in Zimbabwe time (UTC+2)
+- 30, 60, and 90-minute consultation options
+- Form for client's personal details (name, contact information, preferred consultation method)
+- Session type selection (divination, spiritual guidance, ancestral communication, etc.)
+
+### Payment System
+- Integration with multiple payment platforms:
+  - EcoCash (Zimbabwe)
+  - Western Union
+  - WorldRemit
+  - Remitly
+- Secure payment verification process
+- Automatic receipt generation
+- Currency conversion support (USD, ZWL, etc.)
+
+### Consultation Preparation
+- Client issue submission options:
+  - Text description (limited to 500 words)
+  - Voice note upload (limited to 5 minutes)
+  - Video submission (limited to 5 minutes)
+- Simple file upload system with data compression
+- Ability to include photos of relevant items/situations
+
+### Practitioner Dashboard
+- Calendar view of all scheduled appointments
+- Client information organized by date/time
+- Payment status indicators
+- Interface for reviewing client submissions
+- Response system allowing practitioner to:
+  - Send text responses
+  - Record voice messages
+  - Record video responses
+- Option to reschedule/cancel with automatic notification
+
+### WhatsApp Integration
+- Automated appointment confirmations via WhatsApp
+- Payment verification notifications
+- Appointment reminders (24 hours before)
+- Secure link sharing for accessing practitioner responses
+- Simple practitioner notification system for new bookings
+
+## Design Requirements
+- Mobile-responsive interface prioritizing smartphone access
+- Minimalist design with high contrast for visibility
+- Traditional Zimbabwean symbols and patterns in the color scheme
+- Dark mode option to conserve battery life
+- Offline functionality for areas with unreliable internet
+- Low data usage design for clients with limited data plans
+
+## Security & Privacy
+- End-to-end encryption for all client communications
+- Secure storage of spiritual consultation information
+- Automatic data purging option 30 days after consultation
+- Compliance with data protection regulations
+- Client verification system to prevent booking fraud
