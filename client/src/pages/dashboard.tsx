@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { formatDateTime } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { Check, Clock, DollarSign } from "lucide-react";
 import type { Appointment } from "@shared/schema";
 
-function AppointmentList() {
+function AppointmentList({ filter }: { filter: string }) {
   const { data: appointments, isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
   });
@@ -25,33 +29,66 @@ function AppointmentList() {
     );
   }
 
+  const filteredAppointments = appointments?.filter(appointment => {
+    switch (filter) {
+      case "pending":
+        return appointment.status === "pending" && appointment.paymentStatus === "pending";
+      case "paid":
+        return appointment.paymentStatus === "paid" && appointment.status !== "completed";
+      case "completed":
+        return appointment.status === "completed";
+      default:
+        return true;
+    }
+  });
+
   return (
     <div className="space-y-4">
-      {appointments?.map((appointment) => (
+      {filteredAppointments?.map((appointment) => (
         <Card key={appointment.id}>
           <CardContent className="p-6">
             <div className="flex justify-between items-start">
-              <div>
+              <div className="space-y-2">
                 <h3 className="font-medium">{appointment.type}</h3>
                 <p className="text-sm text-muted-foreground">
                   {formatDateTime(appointment.datetime)}
                 </p>
+                {appointment.consultationDetails?.description && (
+                  <p className="text-sm text-muted-foreground max-w-md">
+                    Details: {appointment.consultationDetails.description}
+                  </p>
+                )}
+                <p className="text-sm">
+                  Contact: {appointment.phoneNumber}
+                </p>
               </div>
-              <div className="flex items-center space-x-2">
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  appointment.status === "confirmed" 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-yellow-100 text-yellow-800"
-                }`}>
-                  {appointment.status}
-                </span>
-                <span className={`px-2 py-1 rounded-full text-xs ${
-                  appointment.paymentStatus === "paid" 
-                    ? "bg-green-100 text-green-800" 
-                    : "bg-red-100 text-red-800"
-                }`}>
-                  {appointment.paymentStatus}
-                </span>
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center space-x-2">
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    appointment.status === "confirmed" 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}>
+                    {appointment.status}
+                  </span>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    appointment.paymentStatus === "paid" 
+                      ? "bg-green-100 text-green-800" 
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                    {appointment.paymentStatus}
+                  </span>
+                </div>
+                {appointment.paymentStatus === "paid" && appointment.status !== "completed" && (
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="mt-2"
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Mark Complete
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
@@ -62,15 +99,42 @@ function AppointmentList() {
 }
 
 export default function Dashboard() {
+  const [activeTab, setActiveTab] = useState("pending");
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Upcoming Appointments</CardTitle>
+            <CardTitle>Consultation Requests</CardTitle>
           </CardHeader>
           <CardContent>
-            <AppointmentList />
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="pending" className="flex items-center">
+                  <Clock className="w-4 h-4 mr-1" />
+                  Pending
+                </TabsTrigger>
+                <TabsTrigger value="paid" className="flex items-center">
+                  <DollarSign className="w-4 h-4 mr-1" />
+                  Paid
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="flex items-center">
+                  <Check className="w-4 h-4 mr-1" />
+                  Completed
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="pending">
+                <AppointmentList filter="pending" />
+              </TabsContent>
+              <TabsContent value="paid">
+                <AppointmentList filter="paid" />
+              </TabsContent>
+              <TabsContent value="completed">
+                <AppointmentList filter="completed" />
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
       </div>
