@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { insertAppointmentSchema } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,6 +12,7 @@ import BookingCalendar from "@/components/calendar/BookingCalendar";
 import { CONSULTATION_TYPES, PAYMENT_METHODS } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import type { InsertAppointment } from "@shared/schema";
 
 enum BookingStep {
   DETAILS,
@@ -23,7 +24,7 @@ export default function Booking() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [step, setStep] = useState<BookingStep>(BookingStep.DETAILS);
 
-  const form = useForm({
+  const form = useForm<InsertAppointment>({
     resolver: zodResolver(insertAppointmentSchema),
     defaultValues: {
       clientId: 1, // TODO: Get from auth
@@ -35,23 +36,23 @@ export default function Booking() {
   });
 
   const createAppointment = useMutation({
-    mutationFn: async (data: any) => {
+    mutationFn: async (data: InsertAppointment) => {
       const res = await apiRequest("POST", "/api/appointments", data);
       return res.json();
     },
     onSuccess: () => {
       setStep(BookingStep.PAYMENT);
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Error",
-        description: "Failed to book appointment. Please try again.",
+        description: error.message || "Failed to book appointment. Please try again.",
         variant: "destructive"
       });
     }
   });
 
-  function onSubmit(data: any) {
+  async function onSubmit(data: InsertAppointment) {
     if (!selectedDate) {
       toast({
         title: "Select Date",
@@ -60,10 +61,15 @@ export default function Booking() {
       });
       return;
     }
-    createAppointment.mutate({
-      ...data,
-      datetime: selectedDate.toISOString()
-    });
+
+    try {
+      await createAppointment.mutateAsync({
+        ...data,
+        datetime: selectedDate.toISOString()
+      });
+    } catch (error) {
+      console.error("Appointment creation failed:", error);
+    }
   }
 
   if (step === BookingStep.PAYMENT) {
@@ -81,7 +87,6 @@ export default function Booking() {
                   variant="outline"
                   className="w-full justify-start h-auto p-4"
                   onClick={() => {
-                    // TODO: Implement payment processing
                     toast({
                       title: "Payment Method Selected",
                       description: `You selected ${method.label}. Payment integration coming soon.`
@@ -135,6 +140,7 @@ export default function Booking() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -148,6 +154,7 @@ export default function Booking() {
                     <FormControl>
                       <Input {...field} placeholder="Briefly describe your needs" />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -159,6 +166,13 @@ export default function Booking() {
               >
                 {createAppointment.isPending ? "Booking..." : "Book Appointment"}
               </Button>
+
+              {/* Debug form errors */}
+              {process.env.NODE_ENV === 'development' && (
+                <pre className="text-xs text-red-500">
+                  {JSON.stringify(form.formState.errors, null, 2)}
+                </pre>
+              )}
             </form>
           </Form>
         </CardContent>
