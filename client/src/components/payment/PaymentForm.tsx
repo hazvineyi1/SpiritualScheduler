@@ -7,21 +7,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PAYMENT_METHODS } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { InsertPayment } from "@shared/schema";
 
 const paymentFormSchema = z.object({
-  amount: z.number().min(1),
-  currency: z.string(),
-  method: z.string(),
-  reference: z.string().optional(),
   details: z.object({
     name: z.string().min(2, "Name is required"),
+    email: z.string().email("Invalid email address"),
     phone: z.string().optional(),
-    email: z.string().email("Invalid email address")
   })
 });
 
@@ -38,13 +33,10 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
   const form = useForm({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      amount,
-      currency: "USD",
-      method: selectedMethod,
       details: {
         name: "",
-        phone: "",
-        email: ""
+        email: "",
+        phone: ""
       }
     }
   });
@@ -98,22 +90,30 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
     }
   };
 
-  const handlePaymentSubmit = async (data: z.infer<typeof paymentFormSchema>) => {
+  const paymentSites = {
+    ecocash: "https://www.econet.co.zw/ecocash",
+    western_union: "https://www.westernunion.com/us/en/web/send-money/zimbabwe",
+    world_remit: "https://www.worldremit.com/en/zimbabwe",
+    remitly: "https://www.remitly.com/us/en/zimbabwe"
+  };
+
+  const handlePaymentMethodSelect = async (method: string) => {
     try {
+      const formData = form.getValues();
+
       // Create payment record
       const paymentData: InsertPayment = {
         appointmentId,
-        amount: data.amount,
-        currency: data.currency,
-        method: data.method,
-        reference: `${data.method}_${Date.now()}`
+        amount,
+        currency: "USD",
+        method,
+        reference: `${method}_${Date.now()}`
       };
 
       await apiRequest("POST", "/api/payments", paymentData);
 
-      // Show success message with payment instructions
-      const { instructions, details } = getPaymentInstructions(data.method);
-
+      // Show payment instructions
+      const { instructions, details } = getPaymentInstructions(method);
       toast({
         title: "Payment Instructions",
         description: (
@@ -129,16 +129,9 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
         duration: 10000,
       });
 
-      // Open payment service website in new tab
-      const paymentSites = {
-        ecocash: "https://www.econet.co.zw/ecocash",
-        western_union: "https://www.westernunion.com/us/en/web/send-money",
-        world_remit: "https://www.worldremit.com/en/zimbabwe",
-        remitly: "https://www.remitly.com/us/en/zimbabwe"
-      };
-
-      if (paymentSites[data.method as keyof typeof paymentSites]) {
-        window.open(paymentSites[data.method as keyof typeof paymentSites], '_blank');
+      // Open payment site in new tab
+      if (paymentSites[method as keyof typeof paymentSites]) {
+        window.open(paymentSites[method as keyof typeof paymentSites], '_blank');
       }
 
       onSuccess();
@@ -156,96 +149,92 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
       <CardHeader>
         <CardTitle>Payment Details</CardTitle>
         <CardDescription>
-          Select your preferred payment method and enter your details
+          Select your preferred payment method
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue={selectedMethod} onValueChange={setSelectedMethod}>
-          <TabsList className="grid grid-cols-2 lg:grid-cols-4 mb-8">
-            {PAYMENT_METHODS.map((method) => (
-              <TabsTrigger 
-                key={method.value} 
-                value={method.value}
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-              >
-                {method.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
+        <Form {...form}>
+          <form className="space-y-6">
+            <FormField
+              control={form.control}
+              name="details.name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Full Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder="Enter your full name" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {PAYMENT_METHODS.map((method) => (
-            <TabsContent key={method.value} value={method.value}>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handlePaymentSubmit)} className="space-y-6">
-                  <FormField
-                    control={form.control}
-                    name="details.name"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Full Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Enter your full name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            <FormField
+              control={form.control}
+              name="details.email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="email" placeholder="Enter your email" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                  <FormField
-                    control={form.control}
-                    name="details.email"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input {...field} type="email" placeholder="Enter your email" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+            {selectedMethod === "ecocash" && (
+              <FormField
+                control={form.control}
+                name="details.phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter your EcoCash number" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
-                  {method.value === "ecocash" && (
-                    <FormField
-                      control={form.control}
-                      name="details.phone"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Phone Number</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Enter your EcoCash number" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
+            <div className="grid gap-4">
+              {PAYMENT_METHODS.map((method) => (
+                <Button
+                  key={method.value}
+                  type="button"
+                  variant="outline"
+                  className="w-full h-auto p-4 justify-start"
+                  onClick={() => {
+                    setSelectedMethod(method.value);
+                    handlePaymentMethodSelect(method.value);
+                  }}
+                >
+                  <div className="flex flex-col items-start">
+                    <span className="font-medium">{method.label}</span>
+                    <span className="text-sm text-muted-foreground">
+                      Pay {amount} USD via {method.label}
+                    </span>
+                  </div>
+                </Button>
+              ))}
+            </div>
 
-                  <Alert>
-                    <AlertDescription>
-                      <div className="space-y-2">
-                        <p>{getPaymentInstructions(method.value).instructions}</p>
-                        <ul className="list-disc pl-4 space-y-1">
-                          {getPaymentInstructions(method.value).details.map((detail, index) => (
-                            <li key={index}>{detail}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </AlertDescription>
-                  </Alert>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
-                    size="lg"
-                  >
-                    Continue to {method.label} Payment
-                  </Button>
-                </form>
-              </Form>
-            </TabsContent>
-          ))}
-        </Tabs>
+            <Alert>
+              <AlertDescription>
+                <div className="space-y-2">
+                  <p>{getPaymentInstructions(selectedMethod).instructions}</p>
+                  <ul className="list-disc pl-4 space-y-1">
+                    {getPaymentInstructions(selectedMethod).details.map((detail, index) => (
+                      <li key={index}>{detail}</li>
+                    ))}
+                  </ul>
+                </div>
+              </AlertDescription>
+            </Alert>
+          </form>
+        </Form>
       </CardContent>
     </Card>
   );
