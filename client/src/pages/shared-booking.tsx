@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useRoute } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectTrigger, SelectValue } from "@/components/ui/select"; // Added import
 import { formatDateTime } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -32,6 +31,7 @@ export default function SharedBooking() {
         title: "Payment Verified",
         description: "Your payment reference has been submitted successfully.",
       });
+      setPaymentRef(""); // Clear the input after successful submission
     },
     onError: (error: Error) => {
       toast({
@@ -75,11 +75,8 @@ export default function SharedBooking() {
     return (
       <div className="container mx-auto px-4 py-8">
         <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-destructive">Booking Not Found</CardTitle>
-          </CardHeader>
           <CardContent>
-            <p>The booking link you're trying to access is invalid or has expired.</p>
+            <p className="text-destructive">The booking link you're trying to access is invalid or has expired.</p>
           </CardContent>
         </Card>
       </div>
@@ -111,19 +108,11 @@ export default function SharedBooking() {
           </div>
 
           <div className="p-4">
-            <h3 className="font-medium mb-4">Consultation Type</h3>
-            <Select 
-              value={appointment.type}
-              disabled
-              className="w-full mb-6"
-            >
-              <SelectTrigger>
-                <SelectValue>{appointment.type}</SelectValue>
-              </SelectTrigger>
-            </Select>
-
-            <h3 className="font-medium mb-4">Date & Time</h3>
-            <p className="text-gray-700 mb-6">{formatDateTime(appointment.datetime)}</p>
+            <h3 className="font-medium mb-2">Consultation Details</h3>
+            <div className="space-y-2 mb-6">
+              <p className="text-sm text-gray-600">Type: {appointment.type}</p>
+              <p className="text-sm text-gray-600">Date: {formatDateTime(appointment.datetime)}</p>
+            </div>
 
             <form onSubmit={handleSubmitReference} className="space-y-4">
               <div>
