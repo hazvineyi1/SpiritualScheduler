@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import BookingCalendar from "@/components/calendar/BookingCalendar";
-import { CONSULTATION_TYPES, PAYMENT_METHODS } from "@/lib/utils";
+import { CONSULTATION_TYPES } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertAppointment } from "@shared/schema";
@@ -93,7 +93,7 @@ export default function Booking() {
       title: "Share Your Booking",
       description: (
         <div className="flex items-center gap-2">
-          <input 
+          <Input 
             type="text" 
             value={shareableLink} 
             readOnly 
@@ -182,7 +182,11 @@ export default function Booking() {
                   <FormItem>
                     <FormLabel>Consultation Details</FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="Briefly describe your needs" />
+                      <Input 
+                        {...field} 
+                        type="text"
+                        placeholder="Briefly describe your needs" 
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -191,18 +195,11 @@ export default function Booking() {
 
               <Button 
                 type="submit" 
-                className="w-full"
+                className="w-full bg-orange-500 hover:bg-orange-600"
                 disabled={createAppointment.isPending}
               >
                 {createAppointment.isPending ? "Booking..." : "Book Appointment"}
               </Button>
-
-              {/* Debug form errors */}
-              {process.env.NODE_ENV === 'development' && (
-                <pre className="text-xs text-red-500">
-                  {JSON.stringify(form.formState.errors, null, 2)}
-                </pre>
-              )}
             </form>
           </Form>
         </CardContent>
