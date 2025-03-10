@@ -48,6 +48,36 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
     }
   });
 
+  const getPaymentLink = (method: string, data: any) => {
+    switch (method) {
+      case "ecocash":
+        return `https://www.econet.co.zw/ecocash?phone=${encodeURIComponent(data.details.phone)}&amount=${data.amount}`;
+      case "western_union":
+        return "https://www.westernunion.com/us/en/web/send-money";
+      case "world_remit":
+        return "https://www.worldremit.com/en/zimbabwe";
+      case "remitly":
+        return "https://www.remitly.com/us/en/zimbabwe";
+      default:
+        return "";
+    }
+  };
+
+  const getPaymentInstructions = (method: string) => {
+    switch (method) {
+      case "ecocash":
+        return "Send payment to EcoCash number: +263 77 123 4567. Use your booking reference as the payment note.";
+      case "western_union":
+        return "Send to:\nName: [Practitioner Name]\nCity: Harare, Zimbabwe\nInclude your booking reference in the message.";
+      case "world_remit":
+        return "Send to mobile money:\nNumber: +263 77 123 4567\nName: [Practitioner Name]\nCity: Harare";
+      case "remitly":
+        return "Send to mobile wallet:\nNumber: +263 77 123 4567\nName: [Practitioner Name]\nLocation: Harare, Zimbabwe";
+      default:
+        return "Follow the payment instructions sent to your email.";
+    }
+  };
+
   const onSubmit = async (data: z.infer<typeof paymentFormSchema>) => {
     try {
       const paymentData: InsertPayment = {
@@ -59,12 +89,22 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
       };
 
       await apiRequest("POST", "/api/payments", paymentData);
-      
+
+      // Get payment link and instructions
+      const paymentLink = getPaymentLink(data.method, data);
+      const instructions = getPaymentInstructions(data.method);
+
+      // Show payment instructions
       toast({
-        title: "Payment Initiated",
-        description: getPaymentInstructions(data.method),
+        title: "Payment Instructions",
+        description: instructions,
       });
-      
+
+      // Open payment link in new tab if available
+      if (paymentLink) {
+        window.open(paymentLink, '_blank');
+      }
+
       onSuccess();
     } catch (error) {
       toast({
@@ -72,21 +112,6 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
         description: "There was an error processing your payment. Please try again.",
         variant: "destructive"
       });
-    }
-  };
-
-  const getPaymentInstructions = (method: string) => {
-    switch (method) {
-      case "ecocash":
-        return "Please send payment to EcoCash number: +263 XX XXX XXXX. Use your booking reference as the payment note.";
-      case "western_union":
-        return "Visit your nearest Western Union location with your booking reference to complete the payment.";
-      case "world_remit":
-        return "Open your WorldRemit app and send payment to account: XXXXX. Use your booking reference as the transfer note.";
-      case "remitly":
-        return "Use Remitly to send payment to account: XXXXX. Include your booking reference in the transfer details.";
-      default:
-        return "Follow the payment instructions sent to your email.";
     }
   };
 
@@ -158,7 +183,7 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
                       type="submit" 
                       className="w-full"
                     >
-                      Pay {amount} USD
+                      Pay {amount} USD with {method.label}
                     </Button>
                   </div>
                 </form>
