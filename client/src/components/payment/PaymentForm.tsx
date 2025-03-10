@@ -2,10 +2,11 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PAYMENT_METHODS } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -48,38 +49,58 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
     }
   });
 
-  const getPaymentLink = (method: string, data: any) => {
-    switch (method) {
-      case "ecocash":
-        return `https://www.econet.co.zw/ecocash?phone=${encodeURIComponent(data.details.phone)}&amount=${data.amount}`;
-      case "western_union":
-        return "https://www.westernunion.com/us/en/web/send-money";
-      case "world_remit":
-        return "https://www.worldremit.com/en/zimbabwe";
-      case "remitly":
-        return "https://www.remitly.com/us/en/zimbabwe";
-      default:
-        return "";
-    }
-  };
-
   const getPaymentInstructions = (method: string) => {
     switch (method) {
       case "ecocash":
-        return "Send payment to EcoCash number: +263 77 123 4567. Use your booking reference as the payment note.";
+        return {
+          instructions: "Send payment to our registered EcoCash number:",
+          details: [
+            "Number: +263 77 123 4567",
+            "Amount: $" + amount + " USD",
+            "Reference: Include your name and booking ID"
+          ]
+        };
       case "western_union":
-        return "Send to:\nName: [Practitioner Name]\nCity: Harare, Zimbabwe\nInclude your booking reference in the message.";
+        return {
+          instructions: "Send money to our representative in Zimbabwe:",
+          details: [
+            "Recipient Name: John Doe",
+            "City: Harare",
+            "Country: Zimbabwe",
+            "Amount: $" + amount + " USD"
+          ]
+        };
       case "world_remit":
-        return "Send to mobile money:\nNumber: +263 77 123 4567\nName: [Practitioner Name]\nCity: Harare";
+        return {
+          instructions: "Send to our WorldRemit registered account:",
+          details: [
+            "Mobile Money Number: +263 77 123 4567",
+            "Recipient Name: John Doe",
+            "City: Harare, Zimbabwe",
+            "Amount: $" + amount + " USD"
+          ]
+        };
       case "remitly":
-        return "Send to mobile wallet:\nNumber: +263 77 123 4567\nName: [Practitioner Name]\nLocation: Harare, Zimbabwe";
+        return {
+          instructions: "Send to our Remitly registered account:",
+          details: [
+            "Mobile Wallet: +263 77 123 4567",
+            "Recipient Name: John Doe",
+            "Location: Harare, Zimbabwe",
+            "Amount: $" + amount + " USD"
+          ]
+        };
       default:
-        return "Follow the payment instructions sent to your email.";
+        return {
+          instructions: "Please select a payment method",
+          details: []
+        };
     }
   };
 
-  const onSubmit = async (data: z.infer<typeof paymentFormSchema>) => {
+  const handlePaymentSubmit = async (data: z.infer<typeof paymentFormSchema>) => {
     try {
+      // Create payment record
       const paymentData: InsertPayment = {
         appointmentId,
         amount: data.amount,
@@ -90,25 +111,40 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
 
       await apiRequest("POST", "/api/payments", paymentData);
 
-      // Get payment link and instructions
-      const paymentLink = getPaymentLink(data.method, data);
-      const instructions = getPaymentInstructions(data.method);
+      // Show success message with payment instructions
+      const { instructions, details } = getPaymentInstructions(data.method);
 
-      // Show payment instructions
       toast({
         title: "Payment Instructions",
-        description: instructions,
+        description: (
+          <div className="space-y-2">
+            <p>{instructions}</p>
+            <ul className="list-disc pl-4 space-y-1">
+              {details.map((detail, index) => (
+                <li key={index}>{detail}</li>
+              ))}
+            </ul>
+          </div>
+        ),
+        duration: 10000,
       });
 
-      // Open payment link in new tab if available
-      if (paymentLink) {
-        window.open(paymentLink, '_blank');
+      // Open payment service website in new tab
+      const paymentSites = {
+        ecocash: "https://www.econet.co.zw/ecocash",
+        western_union: "https://www.westernunion.com/us/en/web/send-money",
+        world_remit: "https://www.worldremit.com/en/zimbabwe",
+        remitly: "https://www.remitly.com/us/en/zimbabwe"
+      };
+
+      if (paymentSites[data.method as keyof typeof paymentSites]) {
+        window.open(paymentSites[data.method as keyof typeof paymentSites], '_blank');
       }
 
       onSuccess();
     } catch (error) {
       toast({
-        title: "Payment Failed",
+        title: "Payment Error",
         description: "There was an error processing your payment. Please try again.",
         variant: "destructive"
       });
@@ -119,12 +155,19 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
     <Card>
       <CardHeader>
         <CardTitle>Payment Details</CardTitle>
+        <CardDescription>
+          Select your preferred payment method and enter your details
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue={selectedMethod} onValueChange={setSelectedMethod}>
-          <TabsList className="grid grid-cols-2 lg:grid-cols-4">
+          <TabsList className="grid grid-cols-2 lg:grid-cols-4 mb-8">
             {PAYMENT_METHODS.map((method) => (
-              <TabsTrigger key={method.value} value={method.value}>
+              <TabsTrigger 
+                key={method.value} 
+                value={method.value}
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+              >
                 {method.label}
               </TabsTrigger>
             ))}
@@ -133,7 +176,7 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
           {PAYMENT_METHODS.map((method) => (
             <TabsContent key={method.value} value={method.value}>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(handlePaymentSubmit)} className="space-y-6">
                   <FormField
                     control={form.control}
                     name="details.name"
@@ -178,14 +221,26 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
                     />
                   )}
 
-                  <div className="pt-4">
-                    <Button 
-                      type="submit" 
-                      className="w-full"
-                    >
-                      Pay {amount} USD with {method.label}
-                    </Button>
-                  </div>
+                  <Alert>
+                    <AlertDescription>
+                      <div className="space-y-2">
+                        <p>{getPaymentInstructions(method.value).instructions}</p>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {getPaymentInstructions(method.value).details.map((detail, index) => (
+                            <li key={index}>{detail}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                    size="lg"
+                  >
+                    Continue to {method.label} Payment
+                  </Button>
                 </form>
               </Form>
             </TabsContent>
