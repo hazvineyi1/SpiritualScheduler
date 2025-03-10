@@ -57,6 +57,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New shared appointment route
+  app.get("/api/appointments/shared/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      const appointment = await storage.getAppointment(id);
+
+      if (!appointment) {
+        res.status(404).json({ message: "Appointment not found" });
+        return;
+      }
+
+      // Only send necessary information for shared view
+      const sharedAppointment = {
+        id: appointment.id,
+        type: appointment.type,
+        datetime: appointment.datetime,
+        duration: appointment.duration,
+        status: appointment.status,
+      };
+
+      res.json(sharedAppointment);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch appointment" });
+    }
+  });
+
+
   // Payment routes
   app.post("/api/payments", async (req, res) => {
     try {

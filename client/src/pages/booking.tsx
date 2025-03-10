@@ -14,6 +14,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertAppointment } from "@shared/schema";
 import PaymentForm from "@/components/payment/PaymentForm";
+import { Copy } from "lucide-react";
 
 enum BookingStep {
   DETAILS,
@@ -82,8 +83,40 @@ export default function Booking() {
   const handlePaymentSuccess = () => {
     toast({
       title: "Booking Confirmed",
-      description: "Your appointment has been successfully booked. Check your email for details.",
+      description: "Your appointment has been successfully booked.",
     });
+
+    // Show booking confirmation with shareable link
+    const shareableLink = `${window.location.origin}/shared/${appointmentId}`;
+
+    toast({
+      title: "Share Your Booking",
+      description: (
+        <div className="flex items-center gap-2">
+          <input 
+            type="text" 
+            value={shareableLink} 
+            readOnly 
+            className="flex-1 bg-muted px-2 py-1 rounded text-sm"
+          />
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              navigator.clipboard.writeText(shareableLink);
+              toast({
+                title: "Link Copied",
+                description: "Booking link copied to clipboard",
+              });
+            }}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+      duration: 10000, // Show for 10 seconds
+    });
+
     // Reset form and state
     form.reset();
     setSelectedDate(null);
