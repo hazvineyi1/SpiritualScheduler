@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertAppointmentSchema } from "@shared/schema";
@@ -14,7 +15,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertAppointment } from "@shared/schema";
 import PaymentForm from "@/components/payment/PaymentForm";
-import { Copy } from "lucide-react";
+import { Copy, UserCircle } from "lucide-react";
 
 enum BookingStep {
   DETAILS,
@@ -121,103 +122,114 @@ export default function Booking() {
     setAppointmentId(null);
   };
 
-  if (step === BookingStep.PAYMENT && appointmentId) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <PaymentForm
-          appointmentId={appointmentId}
-          amount={50}
-          onSuccess={handlePaymentSuccess}
-        />
-      </div>
-    );
-  }
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Book a Spiritual Consultation</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <BookingCalendar 
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-              />
+    <div className="min-h-screen bg-gray-50">
+      {/* Add Navigation Header */}
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <h1 className="text-xl font-semibold text-primary">Spiritual Consultation</h1>
+          <Link href="/dashboard">
+            <Button variant="ghost" className="gap-2">
+              <UserCircle className="h-5 w-5" />
+              <span>Dashboard</span>
+            </Button>
+          </Link>
+        </div>
+      </header>
 
-              <FormField
-                control={form.control}
-                name="phoneNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field}
-                        type="tel"
-                        placeholder="Enter your phone number (e.g. +263...)" 
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+      <div className="container mx-auto px-4 py-8">
+        {step === BookingStep.PAYMENT && appointmentId ? (
+          <PaymentForm
+            appointmentId={appointmentId}
+            amount={50}
+            onSuccess={handlePaymentSuccess}
+          />
+        ) : (
+          <Card className="max-w-2xl mx-auto">
+            <CardHeader>
+              <CardTitle>Book a Spiritual Consultation</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <BookingCalendar 
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                  />
 
-              <FormField
-                control={form.control}
-                name="type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Consultation Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {CONSULTATION_TYPES.map(type => (
-                          <SelectItem key={type.value} value={type.value}>
-                            {type.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Phone Number</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field}
+                            type="tel"
+                            placeholder="Enter your phone number (e.g. +263...)" 
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <FormField
-                control={form.control}
-                name="consultationDetails.description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Consultation Details</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field}
-                        placeholder="Briefly describe your needs"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Consultation Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {CONSULTATION_TYPES.map(type => (
+                              <SelectItem key={type.value} value={type.value}>
+                                {type.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              <Button 
-                type="submit" 
-                className="w-full bg-orange-500 hover:bg-orange-600"
-                disabled={createAppointment.isPending}
-              >
-                {createAppointment.isPending ? "Booking..." : "Book Appointment"}
-              </Button>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                  <FormField
+                    control={form.control}
+                    name="consultationDetails.description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Consultation Details</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field}
+                            placeholder="Briefly describe your needs"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-orange-500 hover:bg-orange-600"
+                    disabled={createAppointment.isPending}
+                  >
+                    {createAppointment.isPending ? "Booking..." : "Book Appointment"}
+                  </Button>
+                </form>
+              </Form>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
