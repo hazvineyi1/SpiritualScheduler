@@ -13,6 +13,7 @@ import { CONSULTATION_TYPES, PAYMENT_METHODS } from "@/lib/utils";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertAppointment } from "@shared/schema";
+import PaymentForm from "@/components/payment/PaymentForm";
 
 enum BookingStep {
   DETAILS,
@@ -23,6 +24,7 @@ export default function Booking() {
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [step, setStep] = useState<BookingStep>(BookingStep.DETAILS);
+  const [appointmentId, setAppointmentId] = useState<number | null>(null);
 
   const form = useForm<InsertAppointment>({
     resolver: zodResolver(insertAppointmentSchema),
@@ -37,12 +39,12 @@ export default function Booking() {
 
   const createAppointment = useMutation({
     mutationFn: async (data: InsertAppointment) => {
-      console.log("Submitting appointment data:", data);
       const res = await apiRequest("POST", "/api/appointments", data);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       console.log("Appointment created successfully");
+      setAppointmentId(data.id);
       setStep(BookingStep.PAYMENT);
     },
     onError: (error: Error) => {
@@ -77,36 +79,26 @@ export default function Booking() {
     }
   };
 
-  if (step === BookingStep.PAYMENT) {
+  const handlePaymentSuccess = () => {
+    toast({
+      title: "Booking Confirmed",
+      description: "Your appointment has been successfully booked. Check your email for details.",
+    });
+    // Reset form and state
+    form.reset();
+    setSelectedDate(null);
+    setStep(BookingStep.DETAILS);
+    setAppointmentId(null);
+  };
+
+  if (step === BookingStep.PAYMENT && appointmentId) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <CardTitle>Select Payment Method</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {PAYMENT_METHODS.map((method) => (
-                <Button
-                  key={method.value}
-                  variant="outline"
-                  className="w-full justify-start h-auto p-4"
-                  onClick={() => {
-                    toast({
-                      title: "Payment Method Selected",
-                      description: `You selected ${method.label}. Payment integration coming soon.`
-                    });
-                  }}
-                >
-                  <div className="flex flex-col items-start">
-                    <span className="font-medium">{method.label}</span>
-                    <span className="text-sm text-muted-foreground">Click to select this payment method</span>
-                  </div>
-                </Button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+        <PaymentForm
+          appointmentId={appointmentId}
+          amount={50} // Fixed amount for now
+          onSuccess={handlePaymentSuccess}
+        />
       </div>
     );
   }
