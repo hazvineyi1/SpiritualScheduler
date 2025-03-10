@@ -59,7 +59,7 @@ export default function SharedBooking() {
     navigator.clipboard.writeText(text);
     toast({
       title: "Copied",
-      description: "Booking link copied to clipboard",
+      description: "Text copied to clipboard",
     });
   };
 
@@ -88,50 +88,51 @@ export default function SharedBooking() {
   return (
     <div className="container mx-auto px-4 pt-4">
       <Card className="max-w-2xl mx-auto shadow-none border-none">
-        <CardContent className="p-0 space-y-6">
-          <div className="bg-white p-4 rounded-lg shadow-sm">
-            <h2 className="text-xl font-semibold mb-4">Share Your Booking</h2>
-            <div className="flex items-center gap-2">
-              <Input 
-                value={currentUrl}
-                readOnly
-                className="flex-1 bg-gray-50"
-              />
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={() => copyToClipboard(currentUrl)}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="p-4">
-            <h3 className="font-medium mb-2">Consultation Details</h3>
-            <div className="space-y-2 mb-6">
-              <p className="text-sm text-gray-600">Type: {appointment.type}</p>
-              <p className="text-sm text-gray-600">Date: {formatDateTime(appointment.datetime)}</p>
+        <CardContent className="p-0">
+          <div className="space-y-6">
+            <div className="bg-white p-4 rounded-lg shadow-sm">
+              <h2 className="text-xl font-semibold mb-4">Share Your Booking</h2>
+              <div className="flex items-center gap-2">
+                <Input 
+                  value={currentUrl}
+                  readOnly
+                  className="flex-1 bg-gray-50"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  onClick={() => copyToClipboard(currentUrl)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
-            <form onSubmit={handleSubmitReference} className="space-y-4">
-              <div>
-                <h3 className="font-medium mb-2">Payment Reference</h3>
+            <div className="p-4">
+              <h3 className="text-base font-medium mb-2">Consultation Details</h3>
+              <div className="space-y-2 mb-6 text-gray-600">
+                <p>Type: {appointment.type}</p>
+                <p>Date: {formatDateTime(appointment.datetime)}</p>
+              </div>
+
+              <div className="mb-4">
+                <h3 className="text-base font-medium mb-2">Payment Reference</h3>
                 <Input
                   value={paymentRef}
                   onChange={(e) => setPaymentRef(e.target.value)}
-                  placeholder="Enter your payment reference number"
+                  placeholder="Briefly describe your needs"
                   className="w-full bg-gray-50"
                 />
               </div>
+
               <Button 
-                type="submit" 
+                onClick={handleSubmitReference}
                 className="w-full bg-orange-500 hover:bg-orange-600 text-white"
                 disabled={verifyPayment.isPending}
               >
-                {verifyPayment.isPending ? "Verifying..." : "Submit Payment Reference"}
+                Book Appointment
               </Button>
-            </form>
+            </div>
           </div>
         </CardContent>
       </Card>
