@@ -104,36 +104,47 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <Card>
+        <Card className="border-none shadow-none">
           <CardHeader>
             <CardTitle>Consultation Requests</CardTitle>
           </CardHeader>
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="mb-4">
-                <TabsTrigger value="pending" className="flex items-center">
-                  <Clock className="w-4 h-4 mr-1" />
+          <CardContent className="p-0">
+            <Tabs defaultValue="pending" value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full justify-start border-b rounded-none h-12 bg-transparent p-0">
+                <TabsTrigger 
+                  value="pending" 
+                  className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
+                >
+                  <Clock className="w-4 h-4 mr-2" />
                   Pending
                 </TabsTrigger>
-                <TabsTrigger value="paid" className="flex items-center">
-                  <DollarSign className="w-4 h-4 mr-1" />
+                <TabsTrigger 
+                  value="paid"
+                  className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
+                >
+                  <DollarSign className="w-4 h-4 mr-2" />
                   Paid
                 </TabsTrigger>
-                <TabsTrigger value="completed" className="flex items-center">
-                  <Check className="w-4 h-4 mr-1" />
+                <TabsTrigger 
+                  value="completed"
+                  className="data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-4"
+                >
+                  <Check className="w-4 h-4 mr-2" />
                   Completed
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="pending">
-                <AppointmentList filter="pending" />
-              </TabsContent>
-              <TabsContent value="paid">
-                <AppointmentList filter="paid" />
-              </TabsContent>
-              <TabsContent value="completed">
-                <AppointmentList filter="completed" />
-              </TabsContent>
+              <div className="mt-4">
+                <TabsContent value="pending">
+                  <AppointmentList filter="pending" />
+                </TabsContent>
+                <TabsContent value="paid">
+                  <AppointmentList filter="paid" />
+                </TabsContent>
+                <TabsContent value="completed">
+                  <AppointmentList filter="completed" />
+                </TabsContent>
+              </div>
             </Tabs>
           </CardContent>
         </Card>
