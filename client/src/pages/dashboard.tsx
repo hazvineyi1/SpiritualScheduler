@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -7,11 +7,38 @@ import { formatDateTime } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Check, Clock, DollarSign } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { Appointment } from "@shared/schema";
 
 function AppointmentList({ filter }: { filter: string }) {
+  const { toast } = useToast();
   const { data: appointments, isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
+  });
+
+  const updateAppointment = useMutation({
+    mutationFn: async ({ id, status }: { id: number; status: string }) => {
+      const res = await apiRequest(
+        "PATCH",
+        `/api/appointments/${id}`,
+        { status }
+      );
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Appointment status updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update appointment status",
+        variant: "destructive",
+      });
+    },
   });
 
   if (isLoading) {
@@ -41,6 +68,13 @@ function AppointmentList({ filter }: { filter: string }) {
         return true;
     }
   });
+
+  const handleMarkComplete = async (appointmentId: number) => {
+    await updateAppointment.mutateAsync({
+      id: appointmentId,
+      status: "completed"
+    });
+  };
 
   return (
     <div className="space-y-4">
@@ -84,6 +118,8 @@ function AppointmentList({ filter }: { filter: string }) {
                     size="sm"
                     variant="outline"
                     className="mt-2"
+                    onClick={() => handleMarkComplete(appointment.id)}
+                    disabled={updateAppointment.isPending}
                   >
                     <Check className="w-4 h-4 mr-1" />
                     Mark Complete

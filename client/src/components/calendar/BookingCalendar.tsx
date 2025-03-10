@@ -53,7 +53,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
         <CardContent className="p-0">
           <Calendar
             mode="single"
-            selected={selectedDate}
+            selected={selectedDate as any}
             onSelect={handleDateSelect}
             disabled={disabledDays}
             className="rounded-md"
