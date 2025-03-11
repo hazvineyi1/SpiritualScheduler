@@ -2,6 +2,7 @@ import { pgTable, text, serial, integer, timestamp, json, boolean } from "drizzl
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Existing tables remain unchanged
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -17,7 +18,7 @@ export const appointments = pgTable("appointments", {
   type: text("type").notNull(), // divination, guidance, ancestral
   status: text("status").notNull().default("pending"), // pending, confirmed, completed, cancelled
   paymentStatus: text("payment_status").notNull().default("pending"),
-  phoneNumber: text("phone_number").notNull(), // Added phone number field
+  phoneNumber: text("phone_number").notNull(),
   consultationDetails: json("consultation_details").$type<{
     description?: string;
     audioUrl?: string;
@@ -35,6 +36,19 @@ export const payments = pgTable("payments", {
   method: text("method").notNull(), // ecocash, western_union, etc
   status: text("status").notNull().default("pending"),
   reference: text("reference"),
+});
+
+// New table for tasks and reminders
+export const tasks = pgTable("tasks", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  appointmentId: integer("appointment_id").references(() => appointments.id),
+  title: text("title").notNull(),
+  description: text("description"),
+  dueDate: timestamp("due_date").notNull(),
+  completed: boolean("completed").notNull().default(false),
+  type: text("type").notNull(), // 'reminder', 'task', 'followup'
+  priority: text("priority").notNull().default("medium"), // low, medium, high
 });
 
 // Insert Schemas
@@ -59,7 +73,7 @@ export const insertAppointmentSchema = createInsertSchema(appointments)
     phoneNumber: true,
     consultationDetails: true,
   })
-  .partial({ clientId: true }); // Make clientId optional for now
+  .partial({ clientId: true });
 
 export const insertPaymentSchema = createInsertSchema(payments).pick({
   appointmentId: true,
@@ -68,6 +82,21 @@ export const insertPaymentSchema = createInsertSchema(payments).pick({
   method: true,
   reference: true,
 });
+
+// New schema for tasks
+export const insertTaskSchema = createInsertSchema(tasks)
+  .extend({
+    dueDate: z.string(), // Accept ISO string format
+  })
+  .pick({
+    userId: true,
+    appointmentId: true,
+    title: true,
+    description: true,
+    dueDate: true,
+    type: true,
+    priority: true,
+  });
 
 // Types
 export type User = typeof users.$inferSelect;
@@ -78,3 +107,6 @@ export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 
 export type Payment = typeof payments.$inferSelect;
 export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+export type Task = typeof tasks.$inferSelect;
+export type InsertTask = z.infer<typeof insertTaskSchema>;

@@ -1,15 +1,57 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
 import { formatDateTime } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
-import { Check, Clock, DollarSign } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Check, Clock, DollarSign, Calendar, Bell, MessageSquare, List } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import TaskManager from "@/components/tasks/TaskManager";
 import type { Appointment } from "@shared/schema";
+
+// Stats Overview Component
+function StatsOverview() {
+  const { data: appointments } = useQuery<Appointment[]>({
+    queryKey: ["/api/appointments"],
+  });
+
+  const stats = {
+    today: appointments?.filter(a => 
+      new Date(a.datetime).toDateString() === new Date().toDateString()
+    ).length || 0,
+    pending: appointments?.filter(a => a.status === "pending").length || 0,
+    revenue: appointments?.reduce((sum, a) => 
+      a.paymentStatus === "paid" ? sum + 50 : sum, 0
+    ) || 0
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Today's Sessions</CardTitle>
+          <div className="text-2xl font-bold">{stats.today}</div>
+        </CardHeader>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Pending Requests</CardTitle>
+          <div className="text-2xl font-bold">{stats.pending}</div>
+        </CardHeader>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+          <div className="text-2xl font-bold">${stats.revenue}</div>
+        </CardHeader>
+      </Card>
+    </div>
+  );
+}
 
 function AppointmentList({ filter }: { filter: string }) {
   const { toast } = useToast();
@@ -80,6 +122,21 @@ function AppointmentList({ filter }: { filter: string }) {
     });
   };
 
+  const handleSendWhatsApp = (phoneNumber: string, appointmentDate: string) => {
+    // Format the WhatsApp message
+    const message = `Hello! This is a reminder for your spiritual consultation scheduled for ${formatDateTime(appointmentDate)}`;
+    const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
+  const handleAddReminder = (appointment: Appointment) => {
+    // TODO: Implement add reminder functionality
+    toast({
+      title: "Coming Soon",
+      description: "Reminder functionality will be available soon",
+    });
+  };
+
   return (
     <div className="space-y-4">
       {filteredAppointments.length > 0 ? (
@@ -103,35 +160,52 @@ function AppointmentList({ filter }: { filter: string }) {
                 </div>
                 <div className="flex flex-col items-end gap-2">
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                    <Badge variant={
                       appointment.status === "completed" 
-                        ? "bg-green-100 text-green-800"
+                        ? "default"
                         : appointment.status === "confirmed"
-                        ? "bg-blue-100 text-blue-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}>
+                        ? "secondary"
+                        : "outline"
+                    }>
                       {appointment.status}
-                    </span>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
+                    </Badge>
+                    <Badge variant={
                       appointment.paymentStatus === "paid" 
-                        ? "bg-green-100 text-green-800" 
-                        : "bg-red-100 text-red-800"
-                    }`}>
+                        ? "default"
+                        : "destructive"
+                    }>
                       {appointment.paymentStatus}
-                    </span>
+                    </Badge>
                   </div>
-                  {appointment.paymentStatus === "paid" && appointment.status !== "completed" && (
+                  <div className="flex gap-2 mt-2">
                     <Button 
                       size="sm"
                       variant="outline"
-                      className="mt-2"
-                      onClick={() => handleMarkComplete(appointment.id)}
-                      disabled={updateAppointment.isPending}
+                      onClick={() => handleSendWhatsApp(appointment.phoneNumber, appointment.datetime)}
                     >
-                      <Check className="w-4 h-4 mr-1" />
-                      Mark Complete
+                      <MessageSquare className="w-4 h-4 mr-1" />
+                      WhatsApp
                     </Button>
-                  )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleAddReminder(appointment)}
+                    >
+                      <Bell className="w-4 h-4 mr-1" />
+                      Remind
+                    </Button>
+                    {appointment.paymentStatus === "paid" && appointment.status !== "completed" && (
+                      <Button 
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleMarkComplete(appointment.id)}
+                        disabled={updateAppointment.isPending}
+                      >
+                        <Check className="w-4 h-4 mr-1" />
+                        Complete
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -154,6 +228,33 @@ export default function Dashboard() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold tracking-tight">Dashboard Overview</h1>
+        </div>
+
+        <StatsOverview />
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <TaskManager />
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+              <CardDescription>Common tasks and shortcuts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button variant="outline" className="w-full justify-start">
+                <Calendar className="w-4 h-4 mr-2" />
+                View Calendar
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Send Bulk Messages
+              </Button>
+              <Button variant="outline" className="w-full justify-start">
+                <DollarSign className="w-4 h-4 mr-2" />
+                View Payment Reports
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <Card className="border-none shadow-none">
