@@ -3,6 +3,16 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertAppointmentSchema, insertPaymentSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import { ZodError } from "zod";
+
+const dateRangeSchema = z.object({
+  start: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid start date"),
+  end: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid end date"),
+});
+
+const appointmentStatusSchema = z.object({
+  status: z.enum(["pending", "confirmed", "completed", "cancelled"])
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // User routes
@@ -10,12 +20,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userData = insertUserSchema.parse(req.body);
       const user = await storage.createUser(userData);
-      res.json(user);
+      res.json({ success: true, data: user });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid user data", errors: error.errors });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Validation error", 
+          details: error.errors 
+        });
       } else {
-        res.status(500).json({ message: "Failed to create user" });
+        console.error("User creation error:", error);
+        res.status(500).json({ 
+          success: false, 
+          error: "Internal server error",
+          message: "Failed to create user" 
+        });
       }
     }
   });
@@ -23,12 +42,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Appointment routes
   app.get("/api/appointments", async (req, res) => {
     try {
-      const start = new Date(req.query.start as string);
-      const end = new Date(req.query.end as string);
-      const appointments = await storage.getAppointmentsByDateRange(start, end);
-      res.json(appointments);
+      const { start, end } = dateRangeSchema.parse({
+        start: req.query.start,
+        end: req.query.end
+      });
+
+      const appointments = await storage.getAppointmentsByDateRange(
+        new Date(start),
+        new Date(end)
+      );
+      res.json({ success: true, data: appointments });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch appointments" });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Invalid date range", 
+          details: error.errors 
+        });
+      } else {
+        console.error("Appointment fetch error:", error);
+        res.status(500).json({ 
+          success: false, 
+          error: "Internal server error",
+          message: "Failed to fetch appointments" 
+        });
+      }
     }
   });
 
@@ -36,12 +74,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const appointmentData = insertAppointmentSchema.parse(req.body);
       const appointment = await storage.createAppointment(appointmentData);
-      res.json(appointment);
+      res.json({ success: true, data: appointment });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid appointment data", errors: error.errors });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Validation error", 
+          details: error.errors 
+        });
       } else {
-        res.status(500).json({ message: "Failed to create appointment" });
+        console.error("Appointment creation error:", error);
+        res.status(500).json({ 
+          success: false, 
+          error: "Internal server error",
+          message: "Failed to create appointment" 
+        });
       }
     }
   });
@@ -49,23 +96,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/appointments/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const { status } = req.body;
+      if (isNaN(id)) {
+        throw new Error("Invalid appointment ID");
+      }
+
+      const { status } = appointmentStatusSchema.parse(req.body);
       const appointment = await storage.updateAppointmentStatus(id, status);
-      res.json(appointment);
+
+      if (!appointment) {
+        return res.status(404).json({ 
+          success: false, 
+          error: "Not found",
+          message: "Appointment not found" 
+        });
+      }
+
+      res.json({ success: true, data: appointment });
     } catch (error) {
-      res.status(500).json({ message: "Failed to update appointment status" });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Invalid status", 
+          details: error.errors 
+        });
+      } else {
+        console.error("Status update error:", error);
+        res.status(500).json({ 
+          success: false, 
+          error: "Internal server error",
+          message: "Failed to update appointment status" 
+        });
+      }
     }
   });
 
-  // New shared appointment route
+  // Shared appointment route
   app.get("/api/appointments/shared/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const appointment = await storage.getAppointment(id);
+      if (isNaN(id)) {
+        throw new Error("Invalid appointment ID");
+      }
 
+      const appointment = await storage.getAppointment(id);
       if (!appointment) {
-        res.status(404).json({ message: "Appointment not found" });
-        return;
+        return res.status(404).json({ 
+          success: false, 
+          error: "Not found",
+          message: "Appointment not found" 
+        });
       }
 
       // Only send necessary information for shared view
@@ -77,35 +156,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: appointment.status,
       };
 
-      res.json(sharedAppointment);
+      res.json({ success: true, data: sharedAppointment });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch appointment" });
+      console.error("Shared appointment fetch error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error",
+        message: "Failed to fetch appointment" 
+      });
     }
   });
-
 
   // Payment routes
   app.post("/api/payments", async (req, res) => {
     try {
       const paymentData = insertPaymentSchema.parse(req.body);
       const payment = await storage.createPayment(paymentData);
-      res.json(payment);
+      res.json({ success: true, data: payment });
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid payment data", errors: error.errors });
+      if (error instanceof ZodError) {
+        res.status(400).json({ 
+          success: false, 
+          error: "Validation error", 
+          details: error.errors 
+        });
       } else {
-        res.status(500).json({ message: "Failed to create payment" });
+        console.error("Payment creation error:", error);
+        res.status(500).json({ 
+          success: false, 
+          error: "Internal server error",
+          message: "Failed to create payment" 
+        });
       }
     }
   });
 
   app.get("/api/payments/appointment/:id", async (req, res) => {
     try {
-      const appointmentId = parseInt(req.params.id);
-      const payments = await storage.getPaymentsByAppointment(appointmentId);
-      res.json(payments);
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        throw new Error("Invalid appointment ID");
+      }
+
+      const payments = await storage.getPaymentsByAppointment(id);
+      res.json({ success: true, data: payments });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch payments" });
+      console.error("Payment fetch error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: "Internal server error",
+        message: "Failed to fetch payments" 
+      });
     }
   });
 

@@ -12,7 +12,7 @@ export const users = pgTable("users", {
 
 export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
-  clientId: integer("client_id").references(() => users.id),
+  clientId: integer("client_id").notNull().references(() => users.id),
   datetime: timestamp("datetime").notNull(),
   duration: integer("duration").notNull(), // in minutes
   type: text("type").notNull(), // divination, guidance, ancestral
@@ -30,18 +30,17 @@ export const appointments = pgTable("appointments", {
 
 export const payments = pgTable("payments", {
   id: serial("id").primaryKey(),
-  appointmentId: integer("appointment_id").references(() => appointments.id),
-  amount: integer("amount").notNull(),
+  appointmentId: integer("appointment_id").notNull().references(() => appointments.id),
+  amount: integer("amount").notNull(), // Store amount in cents to avoid floating point issues
   currency: text("currency").notNull(),
   method: text("method").notNull(), // ecocash, western_union, etc
   status: text("status").notNull().default("pending"),
   reference: text("reference"),
 });
 
-// New table for tasks and reminders
 export const tasks = pgTable("tasks", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").references(() => users.id),
+  userId: integer("user_id").notNull().references(() => users.id),
   appointmentId: integer("appointment_id").references(() => appointments.id),
   title: text("title").notNull(),
   description: text("description"),
@@ -51,19 +50,31 @@ export const tasks = pgTable("tasks", {
   priority: text("priority").notNull().default("medium"), // low, medium, high
 });
 
-// Insert Schemas
+// Enhanced validation schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   role: true,
+}).extend({
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  role: z.enum(["client", "practitioner", "admin"]),
 });
 
 export const insertAppointmentSchema = createInsertSchema(appointments)
   .extend({
-    datetime: z.string(), // Accept ISO string format
+    datetime: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+    type: z.enum(["divination", "guidance", "ancestral"]),
+    status: z.enum(["pending", "confirmed", "completed", "cancelled"]),
+    paymentStatus: z.enum(["pending", "paid", "failed"]),
     phoneNumber: z.string()
       .min(10, "Phone number must be at least 10 digits")
-      .regex(/^\+?[0-9]+$/, "Must be a valid phone number"),
+      .regex(/^\+?[0-9]{10,15}$/, "Must be a valid international phone number"),
+    consultationDetails: z.object({
+      description: z.string().optional(),
+      audioUrl: z.string().url("Invalid audio URL").optional(),
+      videoUrl: z.string().url("Invalid video URL").optional(),
+      imageUrls: z.array(z.string().url("Invalid image URL")).optional(),
+    }).optional(),
   })
   .pick({
     clientId: true,
@@ -72,21 +83,28 @@ export const insertAppointmentSchema = createInsertSchema(appointments)
     type: true,
     phoneNumber: true,
     consultationDetails: true,
+  });
+
+export const insertPaymentSchema = createInsertSchema(payments)
+  .extend({
+    amount: z.number().positive("Amount must be positive"),
+    currency: z.string().length(3, "Currency must be a 3-letter code"),
+    method: z.enum(["ecocash", "western_union", "world_remit", "remitly"]),
+    reference: z.string().optional(),
   })
-  .partial({ clientId: true });
+  .pick({
+    appointmentId: true,
+    amount: true,
+    currency: true,
+    method: true,
+    reference: true,
+  });
 
-export const insertPaymentSchema = createInsertSchema(payments).pick({
-  appointmentId: true,
-  amount: true,
-  currency: true,
-  method: true,
-  reference: true,
-});
-
-// New schema for tasks
 export const insertTaskSchema = createInsertSchema(tasks)
   .extend({
-    dueDate: z.string(), // Accept ISO string format
+    dueDate: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid date format"),
+    type: z.enum(["reminder", "task", "followup"]),
+    priority: z.enum(["low", "medium", "high"]),
   })
   .pick({
     userId: true,
