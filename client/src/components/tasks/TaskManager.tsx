@@ -5,17 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { format } from "date-fns";
-import { Bell, Calendar as CalendarIcon, CheckCircle2, Clock, AlertCircle } from "lucide-react";
+import { Calendar as CalendarIcon, CheckCircle2, Clock, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { format } from "date-fns";
 import type { Task, InsertTask } from "@shared/schema";
 
 export default function TaskManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [newTask, setNewTask] = useState({
     title: "",
     type: "task",
@@ -38,7 +37,7 @@ export default function TaskManager() {
         description: "Task created successfully",
       });
       setNewTask({ title: "", type: "task", priority: "medium" });
-      setSelectedDate(null);
+      setSelectedDate(undefined);
     },
     onError: (error: Error) => {
       toast({
@@ -86,7 +85,7 @@ export default function TaskManager() {
       case "medium":
         return <Clock className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Bell className="w-4 h-4 text-green-500" />;
+        return <CalendarIcon className="w-4 h-4 text-green-500" />;
     }
   };
 
@@ -133,14 +132,12 @@ export default function TaskManager() {
           </div>
 
           <div className="flex gap-4 items-start">
-            <div className="flex-1">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border"
-              />
-            </div>
+            <Input 
+              type="date"
+              value={selectedDate ? format(selectedDate, 'yyyy-MM-dd') : ''}
+              onChange={(e) => setSelectedDate(e.target.value ? new Date(e.target.value) : undefined)}
+              className="flex-1"
+            />
             <Button type="submit" className="w-full md:w-auto" disabled={createTask.isPending}>
               {createTask.isPending ? "Creating..." : "Add Task"}
             </Button>
