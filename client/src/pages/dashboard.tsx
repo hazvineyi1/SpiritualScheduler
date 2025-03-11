@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DashboardLayout from "@/components/layouts/DashboardLayout";
@@ -13,8 +13,11 @@ import type { Appointment } from "@shared/schema";
 
 function AppointmentList({ filter }: { filter: string }) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const { data: appointments, isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   const updateAppointment = useMutation({
@@ -27,6 +30,7 @@ function AppointmentList({ filter }: { filter: string }) {
       return res.json();
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });
       toast({
         title: "Success",
         description: "Appointment status updated successfully",
@@ -67,7 +71,7 @@ function AppointmentList({ filter }: { filter: string }) {
       default:
         return true;
     }
-  });
+  }) || [];
 
   const handleMarkComplete = async (appointmentId: number) => {
     await updateAppointment.mutateAsync({
@@ -78,60 +82,62 @@ function AppointmentList({ filter }: { filter: string }) {
 
   return (
     <div className="space-y-4">
-      {filteredAppointments?.map((appointment) => (
-        <Card key={appointment.id} className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div className="space-y-2">
-                <h3 className="font-medium text-lg">{appointment.type}</h3>
-                <p className="text-sm text-muted-foreground">
-                  Scheduled for: {formatDateTime(appointment.datetime)}
-                </p>
-                {appointment.consultationDetails?.description && (
-                  <p className="text-sm text-muted-foreground max-w-md">
-                    Client's Request: {appointment.consultationDetails.description}
+      {filteredAppointments.length > 0 ? (
+        filteredAppointments.map((appointment) => (
+          <Card key={appointment.id} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-6">
+              <div className="flex justify-between items-start">
+                <div className="space-y-2">
+                  <h3 className="font-medium text-lg">{appointment.type}</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Scheduled for: {formatDateTime(appointment.datetime)}
                   </p>
-                )}
-                <p className="text-sm">
-                  Contact: {appointment.phoneNumber}
-                </p>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    appointment.status === "confirmed" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-yellow-100 text-yellow-800"
-                  }`}>
-                    {appointment.status}
-                  </span>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    appointment.paymentStatus === "paid" 
-                      ? "bg-green-100 text-green-800" 
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                    {appointment.paymentStatus}
-                  </span>
+                  {appointment.consultationDetails?.description && (
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Client's Request: {appointment.consultationDetails.description}
+                    </p>
+                  )}
+                  <p className="text-sm">
+                    Contact: {appointment.phoneNumber}
+                  </p>
                 </div>
-                {appointment.paymentStatus === "paid" && appointment.status !== "completed" && (
-                  <Button 
-                    size="sm"
-                    variant="outline"
-                    className="mt-2"
-                    onClick={() => handleMarkComplete(appointment.id)}
-                    disabled={updateAppointment.isPending}
-                  >
-                    <Check className="w-4 h-4 mr-1" />
-                    Mark Complete
-                  </Button>
-                )}
+                <div className="flex flex-col items-end gap-2">
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      appointment.status === "completed" 
+                        ? "bg-green-100 text-green-800"
+                        : appointment.status === "confirmed"
+                        ? "bg-blue-100 text-blue-800"
+                        : "bg-yellow-100 text-yellow-800"
+                    }`}>
+                      {appointment.status}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${
+                      appointment.paymentStatus === "paid" 
+                        ? "bg-green-100 text-green-800" 
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                      {appointment.paymentStatus}
+                    </span>
+                  </div>
+                  {appointment.paymentStatus === "paid" && appointment.status !== "completed" && (
+                    <Button 
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      onClick={() => handleMarkComplete(appointment.id)}
+                      disabled={updateAppointment.isPending}
+                    >
+                      <Check className="w-4 h-4 mr-1" />
+                      Mark Complete
+                    </Button>
+                  )}
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
-
-      {filteredAppointments?.length === 0 && (
+            </CardContent>
+          </Card>
+        ))
+      ) : (
         <div className="text-center py-8 text-muted-foreground">
           No {filter} consultations found
         </div>
