@@ -6,12 +6,18 @@ import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import Booking from "@/pages/booking";
 import SharedBooking from "@/pages/shared-booking";
+import Clients from "@/pages/clients";
+import Payments from "@/pages/payments";
+import Settings from "@/pages/settings";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Booking} />
       <Route path="/dashboard" component={Dashboard} />
+      <Route path="/dashboard/clients" component={Clients} />
+      <Route path="/dashboard/payments" component={Payments} />
+      <Route path="/dashboard/settings" component={Settings} />
       <Route path="/shared/:id" component={SharedBooking} />
       <Route component={NotFound} />
     </Switch>
