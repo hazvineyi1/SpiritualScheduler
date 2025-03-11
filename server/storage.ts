@@ -5,14 +5,14 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Appointment operations
   getAppointment(id: number): Promise<Appointment | undefined>;
   getAppointmentsByClient(clientId: number): Promise<Appointment[]>;
   getAppointmentsByDateRange(start: Date, end: Date): Promise<Appointment[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
   updateAppointmentStatus(id: number, status: string): Promise<Appointment>;
-  
+
   // Payment operations
   getPayment(id: number): Promise<Payment | undefined>;
   getPaymentsByAppointment(appointmentId: number): Promise<Payment[]>;
@@ -74,6 +74,7 @@ export class MemStorage implements IStorage {
     const appointment: Appointment = {
       ...insertAppointment,
       id,
+      datetime: new Date(insertAppointment.datetime),
       status: "pending",
       paymentStatus: "pending",
       practitionerNotes: null,
@@ -85,7 +86,7 @@ export class MemStorage implements IStorage {
   async updateAppointmentStatus(id: number, status: string): Promise<Appointment> {
     const appointment = this.appointments.get(id);
     if (!appointment) throw new Error("Appointment not found");
-    
+
     const updated = { ...appointment, status };
     this.appointments.set(id, updated);
     return updated;
@@ -104,7 +105,12 @@ export class MemStorage implements IStorage {
 
   async createPayment(insertPayment: InsertPayment): Promise<Payment> {
     const id = this.currentIds.payments++;
-    const payment: Payment = { ...insertPayment, id, status: "pending" };
+    const payment: Payment = {
+      ...insertPayment,
+      id,
+      status: "pending",
+      reference: insertPayment.reference || null
+    };
     this.payments.set(id, payment);
     return payment;
   }
@@ -112,7 +118,7 @@ export class MemStorage implements IStorage {
   async updatePaymentStatus(id: number, status: string): Promise<Payment> {
     const payment = this.payments.get(id);
     if (!payment) throw new Error("Payment not found");
-    
+
     const updated = { ...payment, status };
     this.payments.set(id, updated);
     return updated;

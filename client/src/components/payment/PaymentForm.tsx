@@ -31,11 +31,16 @@ export default function PaymentForm({ appointmentId, amount, onSuccess }: Paymen
         appointmentId,
         amount,
         currency: "USD",
-        method,
+        method: method as "ecocash" | "western_union" | "world_remit" | "remitly",
         reference
       };
 
-      await apiRequest("POST", "/api/payments", paymentData);
+      const response = await apiRequest("POST", "/api/payments", paymentData);
+      const jsonResponse = await response.json();
+
+      if (!jsonResponse.success) {
+        throw new Error(jsonResponse.error || "Failed to create payment");
+      }
 
       toast({
         title: "Payment Initiated",

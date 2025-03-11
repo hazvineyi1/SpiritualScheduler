@@ -43,7 +43,11 @@ export default function Booking() {
   const createAppointment = useMutation({
     mutationFn: async (data: InsertAppointment) => {
       const res = await apiRequest("POST", "/api/appointments", data);
-      return res.json();
+      const jsonResponse = await res.json();
+      if (!jsonResponse.success) {
+        throw new Error(jsonResponse.error || "Failed to create appointment");
+      }
+      return jsonResponse.data;
     },
     onSuccess: (data) => {
       setAppointmentId(data.id);
