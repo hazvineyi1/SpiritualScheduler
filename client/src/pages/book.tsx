@@ -35,6 +35,7 @@ const PAYMENT_METHODS = [
   { value: "ecocash", label: "EcoCash USD", desc: "Zimbabwe EcoCash (USD)", instructions: "Send USD to Davidzo Ellen Mubwandarikwa on +263783402890. Use your booking reference as the remark." },
   { value: "innbucks", label: "InnBucks", desc: "InnBucks mobile wallet", instructions: "Send to Davidzo Ellen Mubwandarikwa on +263783402890. Include your booking reference." },
   { value: "world_remit", label: "WorldRemit", desc: "International mobile money", instructions: "Send via the mobile money option (NOT cash pick-up) to Davidzo Ellen Mubwandarikwa on +263783402890. Include your reference in the note." },
+  { value: "remitly", label: "Remitly", desc: "International money transfer", instructions: "Send via the mobile money option (NOT cash pick-up) to Davidzo Ellen Mubwandarikwa on +263783402890. Include your reference in the note." },
 ] as const;
 
 export default function Book() {
