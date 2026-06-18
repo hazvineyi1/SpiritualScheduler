@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upload, FileImage, Phone, CreditCard } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upload, FileImage, Phone, CreditCard, MessageCircle } from "lucide-react";
 import BookingCalendar from "@/components/calendar/BookingCalendar";
 
 const FORMAT_ICONS: Record<string, any> = { video: Video, audio: Mic, chat: MessageSquare, async: Send, in_person: MapPin };
@@ -80,7 +80,10 @@ export default function Book() {
   const canStep0 = !!format && (!reading.isAdult || ageConfirmed);
   const canStep1 = format === "async" || !!selectedDate;
   const canStep2 = !!intake.clientName?.trim() && !!intake.mainQuestion?.trim();
-  const canConfirm = !!paymentMethod && paymentReference.trim().length > 0 && whatsapp.trim().length >= 10 && !!proofFile;
+  const waDigits = whatsapp.replace(/\D/g, "");
+  const waStartsZero = whatsapp.trim().startsWith("0");
+  const waValid = waDigits.length >= 11 && waDigits.length <= 15 && !waStartsZero;
+  const canConfirm = !!paymentMethod && paymentReference.trim().length > 0 && waValid && !!proofFile;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -337,8 +340,27 @@ export default function Book() {
 
               <div>
                 <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><Phone className="h-3.5 w-3.5" /> 3. Your WhatsApp number</p>
-                <Input type="tel" placeholder="+263 7X XXX XXXX" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="bg-white" />
-                <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Session link and confirmation sent here after verification.</p>
+                <Input type="tel" placeholder="+263 7X XXX XXXX" value={whatsapp}
+                  onChange={e => setWhatsapp(e.target.value)}
+                  className="bg-white"
+                  style={{ borderColor: whatsapp.trim().length === 0 ? undefined : waValid ? `${GN}88` : "#e0a0a0" }} />
+                {whatsapp.trim().length > 0 && !waValid ? (
+                  <p className="text-xs mt-1" style={{ color: "#b05050" }}>
+                    {waStartsZero
+                      ? "Include your country code instead of the leading 0 — e.g. +263 77 123 4567."
+                      : "Enter the full number with country code — e.g. +263 77 123 4567."}
+                  </p>
+                ) : (
+                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>
+                    Must be an active WhatsApp number with country code — this is how Ellie reaches you.
+                  </p>
+                )}
+                {waValid && (
+                  <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 text-xs mt-1.5 font-medium" style={{ color: GN }}>
+                    <MessageCircle className="h-3.5 w-3.5" /> Tap to confirm it opens in WhatsApp
+                  </a>
+                )}
               </div>
 
               <div>
