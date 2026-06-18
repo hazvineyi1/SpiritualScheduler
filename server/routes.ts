@@ -5,13 +5,12 @@ import { insertAppointmentSchema } from "@shared/schema";
 import { READINGS, PRODUCTS, SEEDED_REVIEWS } from "@shared/types";
 import { ZodError } from "zod";
 
+const ELLIE_WHATSAPP = "263771234567";
+
 function generateSessionLink(format: string): string {
-  const id = Math.random().toString(36).substring(2, 10);
-  if (format === "video") return `https://meet.jit.si/EllieBotanica-${id}`;
-  if (format === "audio") return `https://meet.jit.si/EllieBotanica-Audio-${id}`;
-  if (format === "chat") return `https://wa.me/263771234567`;
   if (format === "in_person") return "Ellie's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
-  return `https://elliestratorbotanica.com/delivery/${id}`;
+  // All remote sessions (video, audio, chat, async) happen over WhatsApp — no third-party links.
+  return `https://wa.me/${ELLIE_WHATSAPP}`;
 }
 
 function buildWhatsAppVerifyUrl(apt: any): string {

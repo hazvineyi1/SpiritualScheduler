@@ -192,10 +192,10 @@ export default function Book() {
                     <div className="flex-1">
                       <p className="text-sm font-medium" style={{ color: DARK }}>{FORMAT_LABELS[f]}</p>
                       <p className="text-xs" style={{ color: "#9a8e7e" }}>
-                        {f === "video" && "Live video session — scheduled"}
-                        {f === "audio" && "Live audio call — scheduled"}
-                        {f === "chat" && "Real-time text via WhatsApp"}
-                        {f === "async" && "Written/recorded delivery within ~24h"}
+                        {f === "video" && "Live video call on WhatsApp — scheduled"}
+                        {f === "audio" && "Live audio call on WhatsApp — scheduled"}
+                        {f === "chat" && "Real-time text on WhatsApp"}
+                        {f === "async" && "Written/recorded reply on WhatsApp within ~24h"}
                         {f === "in_person" && "Ellie's studio, Harare, Zimbabwe"}
                       </p>
                     </div>
