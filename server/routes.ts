@@ -42,15 +42,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Appointment routes
   app.get("/api/appointments", async (req, res) => {
     try {
-      const { start, end } = dateRangeSchema.parse({
-        start: req.query.start,
-        end: req.query.end
-      });
+      if (req.query.start || req.query.end) {
+        const { start, end } = dateRangeSchema.parse({
+          start: req.query.start,
+          end: req.query.end
+        });
+        const appointments = await storage.getAppointmentsByDateRange(
+          new Date(start),
+          new Date(end)
+        );
+        return res.json({ success: true, data: appointments });
+      }
 
-      const appointments = await storage.getAppointmentsByDateRange(
-        new Date(start),
-        new Date(end)
-      );
+      const appointments = await storage.getAllAppointments();
       res.json({ success: true, data: appointments });
     } catch (error) {
       if (error instanceof ZodError) {

@@ -15,7 +15,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { InsertAppointment } from "@shared/schema";
 import PaymentForm from "@/components/payment/PaymentForm";
-import { Copy, UserCircle } from "lucide-react";
+import { UserCircle } from "lucide-react";
 
 enum BookingStep {
   DETAILS,
@@ -27,11 +27,12 @@ export default function Booking() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [step, setStep] = useState<BookingStep>(BookingStep.DETAILS);
   const [appointmentId, setAppointmentId] = useState<number | null>(null);
+  const [selectedAmount, setSelectedAmount] = useState<number>(40);
 
   const form = useForm<InsertAppointment>({
     resolver: zodResolver(insertAppointmentSchema),
     defaultValues: {
-      clientId: 1, // TODO: Get from auth
+      clientId: 1,
       datetime: new Date().toISOString(),
       duration: 60,
       type: "divination",
@@ -71,6 +72,9 @@ export default function Booking() {
       });
       return;
     }
+
+    const typeInfo = CONSULTATION_TYPES.find(t => t.value === formData.type);
+    if (typeInfo) setSelectedAmount(typeInfo.price);
 
     try {
       const appointmentData = {
@@ -145,7 +149,7 @@ export default function Booking() {
         {step === BookingStep.PAYMENT && appointmentId ? (
           <PaymentForm
             appointmentId={appointmentId}
-            amount={50}
+            amount={selectedAmount}
             onSuccess={handlePaymentSuccess}
           />
         ) : (

@@ -66,10 +66,12 @@ function AppointmentList({ filter }: { filter: string }) {
     mutationFn: async ({ id, status }: { id: number; status: string }) => {
       const res = await apiRequest(
         "PATCH",
-        `/api/appointments/${id}`,
+        `/api/appointments/${id}/status`,
         { status }
       );
-      return res.json();
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Failed to update");
+      return json.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/appointments"] });

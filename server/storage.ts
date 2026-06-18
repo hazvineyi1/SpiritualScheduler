@@ -8,6 +8,7 @@ export interface IStorage {
 
   // Appointment operations
   getAppointment(id: number): Promise<Appointment | undefined>;
+  getAllAppointments(): Promise<Appointment[]>;
   getAppointmentsByClient(clientId: number): Promise<Appointment[]>;
   getAppointmentsByDateRange(start: Date, end: Date): Promise<Appointment[]>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
@@ -54,6 +55,10 @@ export class MemStorage implements IStorage {
   // Appointment operations
   async getAppointment(id: number): Promise<Appointment | undefined> {
     return this.appointments.get(id);
+  }
+
+  async getAllAppointments(): Promise<Appointment[]> {
+    return Array.from(this.appointments.values());
   }
 
   async getAppointmentsByClient(clientId: number): Promise<Appointment[]> {

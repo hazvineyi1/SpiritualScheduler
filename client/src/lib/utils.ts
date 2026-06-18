@@ -16,9 +16,9 @@ export function toISOString(date: Date) {
 }
 
 export const CONSULTATION_TYPES = [
-  { value: "divination", label: "Divination" },
-  { value: "spiritual_guidance", label: "Spiritual Guidance" },
-  { value: "ancestral", label: "Ancestral Communication" },
+  { value: "divination", label: "Divination", price: 40 },
+  { value: "guidance", label: "Spiritual Guidance", price: 50 },
+  { value: "ancestral", label: "Ancestral Communication", price: 70 },
 ];
 
 export const DURATION_OPTIONS = [

@@ -1,0 +1,269 @@
+# Build Prompt — "Elliestrator Botanica" Spiritual Booking & Shop Platform
+
+Paste everything below into Replit (Replit Agent). It specifies **what** to build and **how it should behave**. **All visual design is intentionally left to you.**
+
+---
+
+## 0. Design freedom (read first)
+
+**The look, feel, layout, colour palette, typography, spacing, imagery, icons, and overall aesthetic are entirely up to you.** Do not ask me for design direction — use your best judgment to make something beautiful, modern, calm, and trustworthy, appropriate for a Zimbabwean spiritual healer (Shona/eclectic tradition: tarot, ancestral divination, bone-throwing, spell work, crystals). It should feel sacred and professional, not gimmicky. Make it fully responsive and mobile-first (clients book from phones worldwide). Everything below the design line is **functional/behavioural** requirements — implement all of it; style it however you think is best.
+
+---
+
+## 1. What I'm building
+
+A web application for a **single spiritual healer**, **Elliestrator Botanica** (the healer's name is "Ellie"). It is both a **booking platform** and a **personal online shop**, plus a private **healer dashboard**. Clients anywhere in the world can browse readings, book a session, pay, and upload proof of payment. Ellie verifies payments and runs her practice from a login-protected dashboard.
+
+There are two surfaces:
+1. **Client storefront** — public.
+2. **Healer dashboard** — behind a login.
+
+Provide a way to switch/preview both (a header toggle is fine for the demo; in production the dashboard is reached by logging in).
+
+---
+
+## 2. Users & roles
+
+- **Client (public):** browses, books, pays, uploads proof, enters their WhatsApp number. No account required.
+- **Healer (Ellie):** logs in (email + password). Sees all bookings, verifies payments, manages the calendar, sends session links, and views stats.
+
+---
+
+## 3. Core principle — privacy / no storage (important)
+
+Readings and conversations are **never recorded or stored**. Surface this clearly to clients and treat it as a real data rule:
+- Live sessions are not recorded.
+- Session links are **single-use and expire after the session**.
+- Uploaded proof-of-payment is shown to the healer **for verification only** and **deleted after** a decision is made.
+- Only minimal booking records persist (who/what/when/status/amount) — no reading content, no chat transcripts.
+
+---
+
+## 4. Client storefront — features
+
+### 4.1 Healer profile / landing
+- Hero with Ellie's name, tagline ("Where Ancient Wisdom Meets Modern Healing"), tradition (Shona / eclectic), languages (English, Shona), location (Harare, Zimbabwe), typical response time (~24h), star rating, review count, and a **"ZINATHA verified"** trust badge.
+- A short bio and the **privacy/ephemeral statement** ("Your readings and conversations are never recorded or stored").
+- Primary actions: browse readings, and a **WhatsApp** contact button.
+
+### 4.2 Readings catalogue
+- Show **all 41 readings** (full list in §9), each with: name, category, price (USD), short description, the formats it supports, and an **18+ badge** where flagged.
+- **Search** box and **category filters**: All, Love & Relationships, Ancestors & Spirit, Healing & Wellbeing, Spells & Protection, Guidance & Future, Live & In-Person.
+- Each reading has a **Book** action that opens the booking flow (§6).
+
+### 4.3 Personal shop
+- Show **all 18 products** (full list in §10): incense, crystals, jewellery, oils. Each has name, category, price (USD), short description.
+- A **cart** with quantity controls and a **WhatsApp checkout** (opens a pre-filled WhatsApp message listing the items + total; Ellie confirms stock, payment and shipping over WhatsApp).
+
+### 4.4 Reviews
+- A reviews section with an average rating, a rating breakdown, and individual client reviews (seed a handful).
+
+---
+
+## 5. Session formats (used throughout)
+
+Five delivery formats. A reading supports a subset of these (see §9 rules):
+- **Video Meeting** — live, scheduled. Generates a video room link.
+- **Audio Call** — live, scheduled. Generates an audio room link.
+- **Live Chat** — live, real-time text **delivered via WhatsApp**.
+- **Asynchronous** — a private recorded/written reading delivered within the response time; **not stored** after delivery. No live link.
+- **In-Person** — at Ellie's Harare studio; address shared via WhatsApp after confirmation.
+
+Indicate the session type clearly wherever a booking appears (a colour-coded label/badge with an icon is desirable — palette is your choice).
+
+---
+
+## 6. Booking flow (client) — step by step
+
+A multi-step flow launched from any reading:
+
+**Step 1 — Choose format.** Show only the formats this reading supports. For 18+ readings, require an age-confirmation checkbox before continuing.
+
+**Step 2 — Customise & schedule.**
+- For **live** formats (video/audio/chat/in-person): let the client choose a **duration** (15 / 30 / 45 / 60 min) — price updates live. Then pick a **date** on a calendar and a **time slot** (times in Harare/CAT; disable past dates and Sundays).
+- For **asynchronous**: let the client choose **number of questions** (1 / 3 / 5 / Unlimited) — price updates live. Show expected delivery time.
+- **Fixed sessions** (see §9) are locked to 60 minutes (no duration picker) but still pick date/time.
+- Pricing model: each reading's listed price = its standard (30 min / 3 questions). Shorter/fewer is cheaper, longer/more costs more, scaling from the base. Fixed sessions always charge their listed price.
+
+**Step 3 — Intake questions.** Show the reading's intake questions (default: full name, date of birth, main question/focus; some readings have tailored questions). Answers are confidential.
+
+**Step 4 — Pay & confirm.** This is the final step. In order:
+1. **Choose payment method:** EcoCash, WorldRemit, or Remitly. On selection, show the **payment instructions** (where/how to send the amount in USD).
+2. **Enter WhatsApp number** (required) — this is where the session link and confirmation will be sent.
+3. **Upload proof of payment** (image or PDF receipt; show a preview).
+4. **Confirm booking** — enabled only once a method is chosen **and** a number is entered **and** proof is uploaded. **Once those three are done, the single remaining action is Confirm.**
+
+**On Confirm:**
+- Create a booking with status **"pending verification"** and attach the uploaded proof, the client's WhatsApp number, the session type, the price, and the date/time (for live bookings).
+- The booking immediately appears in the healer's queue / "waiting" list (§7.3).
+- Show the client a clear success state: they are **in the queue**, nothing more to do, and their session link + confirmation will arrive on their WhatsApp once Ellie verifies payment.
+
+Prices are in **USD**. A small platform/booking fee line is fine but optional.
+
+---
+
+## 7. Healer dashboard — features (login required)
+
+### 7.1 Login
+- Email + password login screen. (For the demo, accept any credentials; in production wire real auth.) Include a log-out action.
+
+### 7.2 Stats / analytics (collect plenty)
+Show a rich set of metrics, computed from real booking data where possible:
+- Appointments made (all time), Completed, Upcoming, Awaiting verification.
+- Payments received (total $) and number of payments, Average booking value.
+- This month's earnings (+ trend vs last month).
+- Cancellations, Average rating, Repeat-client rate, Average response time, Profile views.
+- **Bookings by session type** (video / audio / chat / in-person / async) as a small breakdown.
+- **Payments by method** (EcoCash / WorldRemit / Remitly) — count and total each.
+- **Earnings trend** chart (last 6 months).
+- **Most-booked readings**.
+- **Completed sessions** list (record only — no reading content).
+
+### 7.3 "Waiting now" — live display (required)
+A prominent panel with a live/pulsing indicator and a **count of people currently waiting**, covering two cases:
+- Clients **in the session room** waiting to be admitted to a live session → **Admit & join** action (opens the session room link).
+- Clients **waiting for payment verification** → **View proof** action.
+Freshly arrived bookings should be marked (e.g., "just now").
+
+### 7.4 Payment verification
+- Opening a pending booking shows the **uploaded proof of payment** (the real image/receipt the client uploaded), plus the **session type**, **date/time**, **amount**, **method**, and the client's **WhatsApp number**.
+- Two actions: **Verify & send link** (approve) or **Decline**.
+- On **approve**: mark the booking confirmed, then **automatically send the client a WhatsApp message** containing: payment-verified confirmation, the **session type**, the **date/time (CAT)**, and the **session link** (video/audio room link, the WhatsApp chat for chat sessions, or the studio location for in-person). For **asynchronous** readings, send a delivery confirmation instead of a link.
+- After a decision, the proof image is discarded (not stored).
+
+### 7.5 Appointments — List + robust Calendar
+Provide a **toggle between List view and Calendar view**:
+- **List:** all upcoming appointments, each showing client, reading, **session type (prominent)**, date/time, amount, status, and actions.
+- **Calendar (make this robust):** a month calendar showing each day's appointments as compact, **colour-coded-by-session-type** entries (client + time). Highlight today. Clicking a day reveals that day's full appointment list. Include a legend. (Month navigation may be stubbed for the demo.)
+
+### 7.6 Appointment actions (on confirmed bookings)
+- **Send link:** generate an **ephemeral, single-use** session link appropriate to the format and send it to the client's WhatsApp.
+- **Reschedule:** pick a new date/time (calendar + slots) and notify the client on WhatsApp.
+- **Cancel:** with confirmation; notify the client on WhatsApp.
+
+---
+
+## 8. Integrations & infrastructure
+
+- **Payments:** EcoCash (Zimbabwe domestic + USD wallet), WorldRemit, Remitly (international/diaspora). For v1, payment is **manual with proof-of-payment upload + healer verification** (as specified). Architect so a real gateway (e.g., **Paynow** or **DPO Pay**, which bridge EcoCash/cards/PayPal) and the remittance rails can be slotted in later. Price everything in **USD**.
+- **WhatsApp:** For v1, use **`wa.me` deep links** (pre-filled messages) for the floating contact button, cart checkout, booking hand-off, reschedule/cancel notices, and the verified-payment confirmation + session link. Architect so the **WhatsApp Business / Cloud API** can later send these automatically.
+- **Video/Audio sessions:** generate room links via an embeddable provider (e.g., Daily.co, Jitsi, Twilio). Links must be single-use and expire after the session; sessions are not recorded.
+- **File upload:** accept image/PDF proof of payment; store only transiently and delete after verification.
+- **Auth:** healer login.
+- **Database:** persist readings, products, bookings/appointments (status, session type, date/time, amount, method, client WhatsApp number), and reviews. Do **not** persist reading content, chat, or proof images beyond verification.
+- **Hosting:** web app, responsive, accessible from any country. Choose the stack you work best with on Replit.
+
+---
+
+## 9. Readings to seed (all 41)
+
+Format rules:
+- **Default formats** = Video, Audio, Live Chat, Asynchronous (unless noted).
+- **Spells & Protection** items = **Asynchronous only**.
+- **Fixed** = locked 60-minute session at listed price.
+- **18+** = require age confirmation.
+- In-person where noted.
+
+**Love & Relationships**
+| Reading | Price | Notes |
+|---|---|---|
+| Purpose of a Relationship | $80 | |
+| The Friendship Spread | $60 | no audio |
+| Are You Compatible? | $70 | |
+| Love Thermometer Spread | $40 | no audio |
+| Torn Between 2 Lovers | $80 | |
+| Easy Relationship Spread | $30 | chat/async only |
+| Couples Spread | $30 | no audio |
+| Toxic Relationship | $50 | |
+| Relationship Evaluation | $60 | |
+| Family Spread | $60 | no audio |
+| Red Hot Intimacy | $120 | **18+**, no audio |
+| Adult Spread | $30 | **18+**, chat/async only |
+| Before Getting A Couple Reading | $150 | **fixed**, video |
+
+**Ancestors & Spirit**
+| Reading | Price | Notes |
+|---|---|---|
+| Ancestor Reading | $70 | video/audio/async |
+| Connecting with a Passed Loved One | $50 | video/audio/async |
+| Hakata (Bone Throwing / Osteomancy) | $40 | video/audio/async |
+| Is A Spirit Contacting You? | $50 | video/audio/async |
+| Mediumship Development | $50 | video/audio/async |
+
+**Healing & Wellbeing**
+| Reading | Price | Notes |
+|---|---|---|
+| Shadow Work Spread | $60 | no audio |
+| Healing Trauma | $70 | |
+| Clearing Your Head | $50 | |
+| Spiritual Cleanse | $45 | video/audio/async |
+| Bad Mood Spread | $20 | chat/async only |
+
+**Spells & Protection** (asynchronous only)
+| Reading | Price |
+|---|---|
+| Leave Me Alone / Banishing Spell | $100 |
+| Return To Sender Spell | $100 |
+| Remove 3rd Party | $100 |
+| Protected & Guarded | $15 |
+
+**Guidance & Future**
+| Reading | Price | Notes |
+|---|---|---|
+| General Reading | $70 | |
+| The Solution Spread | $50 | |
+| Find Out The Truth | $40 | no audio |
+| The Next Few Months | $60 | video/audio/async |
+| 2026 New Year Spread | $50 | video/audio/async |
+| Career & Money Review | $50 | |
+| Vision of Success Spread | $40 | no audio |
+| Seeking Prosperity | $60 | video/audio/async |
+| Dream Interpretation Spread | $40 | audio/chat/async |
+| Connecting With Your Home | $60 | video/audio/async |
+| Happy Birthday Spread | $70 | video/audio/async |
+
+**Live & In-Person**
+| Reading | Price | Notes |
+|---|---|---|
+| Unlimited Cards — 1 Hour Video | $120 | **fixed**, video |
+| Couple Reading (Video) | $120 | **fixed**, video |
+| Office Visit Reading | $180 | **fixed**, in-person |
+
+Default intake questions: full name, date of birth, main question/focus. Give tailored questions where it makes sense (e.g. Ancestor Reading: ancestor to connect with; Compatibility: both names + DOBs; Dream Interpretation: describe the dream; Banishing/Return-to-Sender: who/what to remove).
+
+---
+
+## 10. Products to seed (all 18, USD)
+
+**Incense:** White Sage Sticks $5 · Blue Sage (Grandmother Sage) $5 · Vanilla Sticks $5 · Cinnamon Sandal $5 · Pure Loban / Frankincense $10 · Incense Holder $8
+**Crystals:** Moss Agate Bracelet $10 · Moonstone Bracelet $10 · Green Aventurine $15 · Lapis Lazuli Bracelet $20 · Malachite Bracelet $12 · Custom Crystal Bracelet $20
+**Jewellery:** Sea Shell Stone Bracelet $20 · Evil Eye Waistbeads $15 · Nazar / Evil Eye Bracelet $10
+**Oils:** Road Opener Oil $15 · Main Character Domination Oil $30 · Honeypot Yoni Oil $10
+
+---
+
+## 11. Compliance & sensitivity notes
+
+- Show the **ZINATHA-verified** trust badge (Zimbabwe traditional healers' body).
+- **Age-gate** 18+ readings.
+- Treat client data per data-protection norms (Zimbabwe's Cyber & Data Protection Act, plus GDPR for diaspora clients). Honour the no-storage rule.
+- No medical or psychological diagnosis language; keep guidance supportive and confidential.
+
+---
+
+## 12. v1 scope vs. later
+
+**Ship in v1 (must run end-to-end):** client storefront (readings, shop, reviews), full booking flow with proof-of-payment upload + WhatsApp number, bookings landing in the healer queue, healer login, dashboard with stats + "waiting now" + proof verification + send-link + reschedule/cancel, list & calendar views, WhatsApp deep links, USD pricing.
+
+**Architect for later:** real payment gateway (Paynow/DPO + EcoCash/WorldRemit/Remitly), WhatsApp Business API for automated sends, real video provider with expiring links, production auth, automatic deletion of proof/transcripts.
+
+---
+
+## 13. Definition of done
+
+1. A client can browse, pick a reading, choose a format, customise duration/questions, schedule (for live), answer intake, choose a payment method, see payment instructions, enter their WhatsApp number, upload proof, and **confirm** — and that booking appears in the healer's queue with the proof attached.
+2. The healer can log in, see rich stats, see **who is waiting right now**, open a pending booking, view the uploaded proof, and **verify** — which confirms the booking and sends the client a WhatsApp message with the session type, time, and session link.
+3. The healer has a **list and a robust calendar** of appointments, each clearly showing the **session type**, and can send links, reschedule, and cancel.
+4. The shop works with a WhatsApp checkout.
+5. Nothing about readings/conversations is stored; proof is discarded after verification; session links expire.
+6. It's responsive, works from any country, prices in USD, and **looks great — your design throughout.**
