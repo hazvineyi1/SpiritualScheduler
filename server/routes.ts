@@ -14,9 +14,8 @@ function generateSessionLink(format: string): string {
 }
 
 function buildWhatsAppVerifyUrl(apt: any): string {
-  const link = apt.sessionLink || "";
   const date = apt.datetime ? new Date(apt.datetime).toLocaleString("en-ZW", { timeZone: "Africa/Harare" }) : "as arranged";
-  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your payment for *${apt.readingName}* has been verified by Ellie.\n\n📅 *Session:* ${date} (CAT)\n🎥 *Format:* ${apt.format}\n🔗 *Link:* ${link}\n\nThank you for booking with Elliestrator Botanica. 🌿`;
+  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). Ellie will message you here when it's time to begin. Thank you for booking with Elliestrator Botanica. 🌿`;
   return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 
