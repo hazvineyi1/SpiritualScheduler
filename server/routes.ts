@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { insertAppointmentSchema } from "@shared/schema";
+import { storage, SlotUnavailableError } from "./storage";
+import { insertAppointmentSchema, updateAvailabilitySchema } from "@shared/schema";
 import { READINGS, PRODUCTS, SEEDED_REVIEWS } from "@shared/types";
 import { ZodError } from "zod";
 
@@ -71,8 +71,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err instanceof ZodError) {
         return res.status(400).json({ success: false, error: "Validation error", details: err.errors });
       }
+      if (err instanceof SlotUnavailableError) {
+        return res.status(409).json({ success: false, error: err.message });
+      }
       console.error("Create appointment error:", err);
       res.status(500).json({ success: false, error: "Failed to create appointment" });
+    }
+  });
+
+  // ---- Availability / scheduling ------------------------------------------
+  app.get("/api/availability", async (_req, res) => {
+    try {
+      const config = await storage.getAvailability();
+      res.json({ success: true, data: config });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch availability" });
+    }
+  });
+
+  app.put("/api/availability", async (req, res) => {
+    try {
+      const update = updateAvailabilitySchema.parse(req.body);
+      const config = await storage.updateAvailability(update);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: "Validation error", details: err.errors });
+      }
+      if (err instanceof SlotUnavailableError) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      res.status(500).json({ success: false, error: "Failed to update availability" });
+    }
+  });
+
+  app.get("/api/availability/slots", async (req, res) => {
+    try {
+      const date = String(req.query.date || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, error: "Provide a date as YYYY-MM-DD" });
+      }
+      const slots = await storage.getDaySlots(date);
+      res.json({ success: true, data: { date, slots } });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch slots" });
+    }
+  });
+
+  app.post("/api/availability/block", async (req, res) => {
+    try {
+      const { datetime } = req.body;
+      if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
+      const config = await storage.blockSlot(datetime);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      if (err instanceof SlotUnavailableError) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      res.status(500).json({ success: false, error: "Failed to close slot" });
+    }
+  });
+
+  app.post("/api/availability/unblock", async (req, res) => {
+    try {
+      const { datetime } = req.body;
+      if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
+      const config = await storage.unblockSlot(datetime);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      if (err instanceof SlotUnavailableError) {
+        return res.status(400).json({ success: false, error: err.message });
+      }
+      res.status(500).json({ success: false, error: "Failed to open slot" });
     }
   });
 

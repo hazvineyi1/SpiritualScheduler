@@ -14,6 +14,7 @@ import {
   LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock,
 } from "lucide-react";
 import { format } from "date-fns";
+import ScheduleManager from "@/components/dashboard/ScheduleManager";
 
 const BG     = "#fafaf7";
 const HERO   = "#eef3ea";
@@ -466,6 +467,9 @@ export default function Dashboard() {
             </div>
           )}
         </div>
+
+        {/* Schedule & availability */}
+        <ScheduleManager />
 
         {/* All appointments */}
         <div className="bg-white rounded-lg border" style={{ borderColor: BORDER }}>

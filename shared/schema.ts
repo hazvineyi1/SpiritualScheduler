@@ -48,3 +48,31 @@ export type User = typeof users.$inferSelect;
 export type InsertUser = { email: string; password: string; role?: string };
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
+
+// ---- Availability / scheduling -------------------------------------------
+// The healer controls a weekly recurring schedule (which weekdays are open and
+// the daily working window), plus one-off slot overrides (close an available
+// slot, or re-open one). A slot is "booked" when an active appointment sits on
+// it. Slots are a fixed length (minutes).
+export const availabilityConfigSchema = z.object({
+  weekdays: z.array(z.number().int().min(0).max(6)),
+  startHour: z.number().int().min(0).max(23),
+  endHour: z.number().int().min(1).max(24),
+  slotMinutes: z.number().int().min(15).max(240),
+  blockedSlots: z.array(z.string()),
+});
+export type AvailabilityConfig = z.infer<typeof availabilityConfigSchema>;
+
+// Partial update (healer adjusts the weekly schedule). blockedSlots is managed
+// through the dedicated block/unblock routes, not this update.
+export const updateAvailabilitySchema = availabilityConfigSchema
+  .omit({ blockedSlots: true })
+  .partial();
+export type UpdateAvailability = z.infer<typeof updateAvailabilitySchema>;
+
+export type SlotStatus = "available" | "booked" | "closed" | "past";
+export interface DaySlot {
+  datetime: string; // ISO start of the slot
+  label: string;    // e.g. "09:00"
+  status: SlotStatus;
+}

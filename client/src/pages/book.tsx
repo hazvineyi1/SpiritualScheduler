@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upload, FileImage, Phone, CreditCard, MessageCircle } from "lucide-react";
 import BookingCalendar from "@/components/calendar/BookingCalendar";
 
@@ -48,7 +48,7 @@ export default function Book() {
   const [step, setStep] = useState(0);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [format, setFormat] = useState<SessionFormat | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [duration, setDuration] = useState(30);
   const [questionCount, setQuestionCount] = useState(3);
   const [intake, setIntake] = useState<Record<string, string>>({ clientName: "", dob: "", mainQuestion: "" });
@@ -78,7 +78,7 @@ export default function Book() {
   const selectedMethod = PAYMENT_METHODS.find(m => m.value === paymentMethod);
 
   const canStep0 = !!format && (!reading.isAdult || ageConfirmed);
-  const canStep1 = format === "async" || !!selectedDate;
+  const canStep1 = format === "async" || !!selectedSlot;
   const canStep2 = !!intake.clientName?.trim() && !!intake.mainQuestion?.trim();
   const waDigits = whatsapp.replace(/\D/g, "");
   const waStartsZero = whatsapp.trim().startsWith("0");
@@ -103,17 +103,30 @@ export default function Book() {
     if (!canConfirm || !format) return;
     setIsSubmitting(true);
     try {
-      const res = await apiRequest("POST", "/api/appointments", {
-        readingId: reading.id, readingName: reading.name, category: reading.category,
-        format, datetime: selectedDate?.toISOString(),
-        duration: isLive ? duration : undefined,
-        questionCount: format === "async" ? questionCount : undefined,
-        whatsappNumber: whatsapp.trim(), paymentMethod: paymentMethod!,
-        paymentAmount: finalPrice, paymentReference: paymentReference.trim(),
-        clientName: intake.clientName, intakeAnswers: intake,
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          readingId: reading.id, readingName: reading.name, category: reading.category,
+          format, datetime: selectedSlot ?? undefined,
+          duration: isLive ? duration : undefined,
+          questionCount: format === "async" ? questionCount : undefined,
+          whatsappNumber: whatsapp.trim(), paymentMethod: paymentMethod!,
+          paymentAmount: finalPrice, paymentReference: paymentReference.trim(),
+          clientName: intake.clientName, intakeAnswers: intake,
+        }),
       });
-      const json = await res.json();
-      if (!json.success) throw new Error(json.error || "Booking failed");
+      const json = await res.json().catch(() => ({ success: false, error: "Booking failed" }));
+      if (res.status === 409) {
+        // Slot was taken or closed between selection and confirmation.
+        queryClient.invalidateQueries({ queryKey: ["/api/availability/slots"] });
+        setSelectedSlot(null);
+        setStep(1);
+        toast({ title: "That time is no longer available", description: json.error || "Please choose another open slot.", variant: "destructive" });
+        return;
+      }
+      if (!res.ok || !json.success) throw new Error(json.error || "Booking failed");
       setBookingId(json.data.id); setBookingDone(true);
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Booking failed.", variant: "destructive" });
@@ -248,7 +261,7 @@ export default function Book() {
                     </div>
                   </div>
                 )}
-                <BookingCalendar selected={selectedDate} onSelect={setSelectedDate} />
+                <BookingCalendar selected={selectedSlot} onSelect={setSelectedSlot} />
               </div>
             )}
             <div className="flex items-center justify-between rounded-lg p-3 mt-4 mb-5" style={{ background: HERO, border: `1px solid ${GN}33` }}>
@@ -299,7 +312,7 @@ export default function Book() {
             <div className="flex items-center justify-between rounded-lg p-3 mb-5" style={{ background: HERO, border: `1px solid ${GN}33` }}>
               <div>
                 <p className="text-sm font-medium" style={{ color: DARK }}>{reading.name}</p>
-                <p className="text-xs" style={{ color: "#9a8e7e" }}>{format && FORMAT_LABELS[format]}{selectedDate ? ` · ${selectedDate.toLocaleDateString()}` : ""}</p>
+                <p className="text-xs" style={{ color: "#9a8e7e" }}>{format && FORMAT_LABELS[format]}{selectedSlot ? ` · ${new Date(selectedSlot).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}` : ""}</p>
               </div>
               <span className="font-bold" style={{ color: GN }}>${finalPrice} USD</span>
             </div>
