@@ -37,7 +37,7 @@ export const insertAppointmentSchema = z.object({
   duration: z.number().int().positive().optional(),
   questionCount: z.number().int().positive().optional(),
   whatsappNumber: z.string().min(10, "Valid WhatsApp number required"),
-  paymentMethod: z.enum(["ecocash", "innbucks", "world_remit"]),
+  paymentMethod: z.enum(["ecocash", "innbucks", "world_remit", "remitly"]),
   paymentAmount: z.number().positive("Amount required"),
   paymentReference: z.string().optional(),
   clientName: z.string().optional(),

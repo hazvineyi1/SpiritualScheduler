@@ -53,6 +53,7 @@ export default function Book() {
   const [questionCount, setQuestionCount] = useState(3);
   const [intake, setIntake] = useState<Record<string, string>>({ clientName: "", dob: "", mainQuestion: "" });
   const [paymentMethod, setPaymentMethod] = useState<typeof PAYMENT_METHODS[number]["value"] | null>(null);
+  const [paymentReference, setPaymentReference] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [proofPreview, setProofPreview] = useState<string | null>(null);
@@ -74,13 +75,12 @@ export default function Book() {
     : isLive ? Math.round(reading.price * (DURATION_TIERS.find(d => d.value === duration)?.multiplier ?? 1))
     : Math.round(reading.price * (QUESTION_TIERS.find(q => q.value === questionCount)?.multiplier ?? 1));
 
-  const paymentRef = paymentMethod ? `EB-${Date.now().toString(36).toUpperCase()}` : "";
   const selectedMethod = PAYMENT_METHODS.find(m => m.value === paymentMethod);
 
   const canStep0 = !!format && (!reading.isAdult || ageConfirmed);
   const canStep1 = format === "async" || !!selectedDate;
   const canStep2 = !!intake.clientName?.trim() && !!intake.mainQuestion?.trim();
-  const canConfirm = !!paymentMethod && whatsapp.trim().length >= 10 && !!proofFile;
+  const canConfirm = !!paymentMethod && paymentReference.trim().length > 0 && whatsapp.trim().length >= 10 && !!proofFile;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,7 +106,7 @@ export default function Book() {
         duration: isLive ? duration : undefined,
         questionCount: format === "async" ? questionCount : undefined,
         whatsappNumber: whatsapp.trim(), paymentMethod: paymentMethod!,
-        paymentAmount: finalPrice, paymentReference: paymentRef,
+        paymentAmount: finalPrice, paymentReference: paymentReference.trim(),
         clientName: intake.clientName, intakeAnswers: intake,
       });
       const json = await res.json();
@@ -323,19 +323,26 @@ export default function Book() {
                   <div className="mt-2 rounded-lg p-3 text-xs" style={{ background: "#fffbf0", border: `1px solid ${GOLD}44` }}>
                     <p className="font-medium mb-1" style={{ color: GOLD }}>Instructions:</p>
                     <p style={{ color: "#5a5040" }}>{selectedMethod.instructions}</p>
-                    <p className="mt-1.5 font-mono bg-white px-2 py-1 rounded border" style={{ borderColor: BORDER, color: "#5a5040" }}>Ref: {paymentRef}</p>
                   </div>
                 )}
               </div>
 
+              {selectedMethod && (
+                <div>
+                  <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><CreditCard className="h-3.5 w-3.5" /> 2. Payment reference number</p>
+                  <Input placeholder="e.g. transaction / confirmation number" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} className="bg-white font-mono" />
+                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Enter the reference shown in your payment confirmation so Ellie can match it.</p>
+                </div>
+              )}
+
               <div>
-                <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><Phone className="h-3.5 w-3.5" /> 2. Your WhatsApp number</p>
+                <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><Phone className="h-3.5 w-3.5" /> 3. Your WhatsApp number</p>
                 <Input type="tel" placeholder="+263 7X XXX XXXX" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} className="bg-white" />
                 <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Session link and confirmation sent here after verification.</p>
               </div>
 
               <div>
-                <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><FileImage className="h-3.5 w-3.5" /> 3. Upload proof of payment</p>
+                <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><FileImage className="h-3.5 w-3.5" /> 4. Upload proof of payment</p>
                 <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,application/pdf" className="hidden" onChange={handleFileChange} />
                 {proofFile ? (
                   <div className="rounded-lg border p-3" style={{ borderColor: `${GN}66`, background: HERO }}>
@@ -357,7 +364,7 @@ export default function Book() {
               <Button className="w-full text-white" disabled={!canConfirm || isSubmitting} onClick={handleConfirm} style={{ background: GN }}>
                 {isSubmitting ? "Confirming…" : "Confirm Booking"}
               </Button>
-              {!canConfirm && <p className="text-center text-xs" style={{ color: "#b0a898" }}>Complete all three steps above to confirm.</p>}
+              {!canConfirm && <p className="text-center text-xs" style={{ color: "#b0a898" }}>Complete all steps above to confirm.</p>}
             </div>
           </div>
         )}
