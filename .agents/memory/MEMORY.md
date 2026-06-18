@@ -1,1 +1,3 @@
 - [Dev server restart](dev-server-restart.md) — server/** edits need a workflow restart before API testing; Vite HMR only covers the client.
+- [Availability & slot scheduling](availability-scheduling.md) — server-authoritative slots, fixed UTC+2, canonical-boundary booking, 409 on double-book.
+- [Healer dashboard auth boundary](healer-auth.md) — session auth; what stays public vs healer-only; don't expose appointment PII.

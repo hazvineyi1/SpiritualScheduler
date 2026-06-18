@@ -1,10 +1,29 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
+import createMemoryStore from "memorystore";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+const MemoryStore = createMemoryStore(session);
+const isProd = app.get("env") === "production";
+const sessionSecret = process.env.SESSION_SECRET || (isProd ? "" : "elliestrator-dev-secret");
+if (!sessionSecret) {
+  throw new Error("SESSION_SECRET must be set in production");
+}
+app.set("trust proxy", 1);
+app.use(
+  session({
+    secret: sessionSecret,
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStore({ checkPeriod: 86400000 }),
+    cookie: { httpOnly: true, sameSite: "lax", secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000 },
+  }),
+);
 
 app.use((req, res, next) => {
   const start = Date.now();

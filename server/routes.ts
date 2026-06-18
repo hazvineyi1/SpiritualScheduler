@@ -4,8 +4,21 @@ import { storage, SlotUnavailableError } from "./storage";
 import { insertAppointmentSchema, updateAvailabilitySchema } from "@shared/schema";
 import { READINGS, PRODUCTS, SEEDED_REVIEWS } from "@shared/types";
 import { ZodError } from "zod";
+import type { Request, Response, NextFunction } from "express";
+
+declare module "express-session" {
+  interface SessionData {
+    user?: { email: string; role: string; name: string };
+  }
+}
 
 const ELLIE_WHATSAPP = "263771234567";
+
+// Only the signed-in healer may manage the schedule and appointments.
+function requireHealer(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.user?.role === "healer") return next();
+  return res.status(401).json({ success: false, error: "Please sign in as the healer to do that." });
+}
 
 function generateSessionLink(format: string): string {
   if (format === "in_person") return "Ellie's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
@@ -41,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Appointments
-  app.get("/api/appointments", async (_req, res) => {
+  app.get("/api/appointments", requireHealer, async (_req, res) => {
     try {
       const appointments = await storage.getAllAppointments();
       res.json({ success: true, data: appointments });
@@ -50,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/appointments/:id", async (req, res) => {
+  app.get("/api/appointments/:id", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -89,7 +102,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/availability", async (req, res) => {
+  app.put("/api/availability", requireHealer, async (req, res) => {
     try {
       const update = updateAvailabilitySchema.parse(req.body);
       const config = await storage.updateAvailability(update);
@@ -118,7 +131,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability/block", async (req, res) => {
+  app.post("/api/availability/block", requireHealer, async (req, res) => {
     try {
       const { datetime } = req.body;
       if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
@@ -132,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/availability/unblock", async (req, res) => {
+  app.post("/api/availability/unblock", requireHealer, async (req, res) => {
     try {
       const { datetime } = req.body;
       if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
@@ -146,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/appointments/:id/status", async (req, res) => {
+  app.patch("/api/appointments/:id/status", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -160,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments/:id/verify", async (req, res) => {
+  app.post("/api/appointments/:id/verify", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -175,7 +188,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments/:id/start", async (req, res) => {
+  app.post("/api/appointments/:id/start", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -191,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments/:id/complete", async (req, res) => {
+  app.post("/api/appointments/:id/complete", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -207,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments/:id/decline", async (req, res) => {
+  app.post("/api/appointments/:id/decline", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -218,7 +231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments/:id/cancel", async (req, res) => {
+  app.post("/api/appointments/:id/cancel", requireHealer, async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
@@ -229,11 +242,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Auth (demo)
+  // Auth
   app.post("/api/auth/login", async (req, res) => {
-    const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ success: false, error: "Email and password required" });
-    res.json({ success: true, data: { email, role: "healer", name: "Ellie" } });
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) return res.status(400).json({ success: false, error: "Email and password required" });
+      const user = await storage.getUserByEmail(String(email).toLowerCase().trim());
+      if (!user || user.password !== password || user.role !== "healer") {
+        return res.status(401).json({ success: false, error: "Invalid email or password." });
+      }
+      req.session.user = { email: user.email, role: user.role, name: "Ellie" };
+      res.json({ success: true, data: req.session.user });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Login failed" });
+    }
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    if (req.session?.user) return res.json({ success: true, data: req.session.user });
+    res.status(401).json({ success: false, error: "Not signed in" });
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
+      res.json({ success: true });
+    });
   });
 
   const httpServer = createServer(app);

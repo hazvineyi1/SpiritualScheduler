@@ -259,11 +259,43 @@ function CalendarView({ appointments }: { appointments: Appointment[] }) {
 export default function Dashboard() {
   const { toast } = useToast();
   const qc = useQueryClient();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const [filter, setFilter] = useState("all");
+
+  const { data: me, isLoading: authLoading } = useQuery<{ email: string; role: string; name: string } | null>({
+    queryKey: ["/api/auth/me"],
+    queryFn: async () => {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (res.status === 401) return null;
+      if (!res.ok) throw new Error("Couldn't check sign-in status");
+      return (await res.json()).data;
+    },
+    retry: false,
+  });
+  const isLoggedIn = !!me;
+
+  const login = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email, password }),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.success) throw new Error(json.error || "Sign in failed");
+      return json.data;
+    },
+    onSuccess: () => { setLoginError(""); setPassword(""); qc.invalidateQueries({ queryKey: ["/api/auth/me"] }); },
+    onError: (e: Error) => setLoginError(e.message),
+  });
+
+  const logout = useMutation({
+    mutationFn: async () => { await fetch("/api/auth/logout", { method: "POST", credentials: "include" }); },
+    onSuccess: () => { qc.clear(); },
+  });
   const [view, setView] = useState<"list" | "calendar">("list");
   const [now, setNow] = useState(Date.now());
 
@@ -306,13 +338,16 @@ export default function Dashboard() {
     mutate.mutate({ id: apt.id, action: "start" });
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoggingIn(true);
-    await new Promise(r => setTimeout(r, 500));
-    setIsLoggedIn(true);
-    setIsLoggingIn(false);
+    login.mutate();
   };
+
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: BG, color: "#9a8e7e" }}>
+      Loading…
+    </div>
+  );
 
   if (!isLoggedIn) return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
@@ -331,11 +366,12 @@ export default function Dashboard() {
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Password</Label>
               <Input type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} required autoComplete="current-password" />
             </div>
-            <Button type="submit" className="w-full text-white" style={{ background: GN }} disabled={isLoggingIn}>
-              {isLoggingIn ? "Signing in…" : "Sign In"}
+            {loginError && <p className="text-xs" style={{ color: "#b05050" }}>{loginError}</p>}
+            <Button type="submit" className="w-full text-white" style={{ background: GN }} disabled={login.isPending}>
+              {login.isPending ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-          <p className="text-center text-xs mt-3" style={{ color: "#b0a898" }}>Demo: any email + password</p>
+          <p className="text-center text-xs mt-3" style={{ color: "#b0a898" }}>Demo login: ellie@elliestratorbotanica.com / healer123</p>
         </div>
         <p className="text-center mt-4">
           <Link href="/"><span className="text-xs cursor-pointer" style={{ color: "#9a8e7e" }}>← Back to storefront</span></Link>
@@ -375,7 +411,7 @@ export default function Dashboard() {
           <span className="text-sm font-semibold" style={{ color: GN }}>✦ Ellie's Dashboard</span>
           <div className="flex items-center gap-1">
             <Link href="/"><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
-            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#9a8e7e" }} onClick={() => setIsLoggedIn(false)}>
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#9a8e7e" }} onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogOut className="h-3.5 w-3.5" /> Logout
             </Button>
           </div>
