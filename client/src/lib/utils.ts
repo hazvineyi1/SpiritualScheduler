@@ -30,31 +30,24 @@ export const DURATION_OPTIONS = [
 export const PAYMENT_METHODS = [
   {
     value: "ecocash",
-    label: "EcoCash",
-    instructions: "Send payment to merchant code: 123456\nInclude reference number in remarks.",
+    label: "EcoCash USD",
+    instructions: "Send USD to:\nName: Davidzo Ellen Mubwandarikwa\nNumber: +263783402890\nInclude reference number in remarks.",
     requirements: ["Mobile number", "Reference number"],
     verificationUrl: "https://www.econet.co.zw/ecocash/check-transaction",
   },
   {
-    value: "western_union",
-    label: "Western Union",
-    instructions: "Send to:\nName: [Business Name]\nLocation: Harare, Zimbabwe\nInclude reference number in message.",
-    requirements: ["MTCN", "Sender name"],
-    verificationUrl: "https://www.westernunion.com/us/en/track-transfer",
+    value: "innbucks",
+    label: "InnBucks",
+    instructions: "Send via InnBucks to:\nName: Davidzo Ellen Mubwandarikwa\nNumber: +263783402890\nInclude reference number in remarks.",
+    requirements: ["Mobile number", "Reference number"],
+    verificationUrl: "https://innbucks.co.zw",
   },
   {
     value: "world_remit",
     label: "WorldRemit",
-    instructions: "Send to mobile money:\nAccount: +263 XX XXX XXXX\nInclude reference as payment reference.",
+    instructions: "Send via the mobile money option (NOT cash pick-up) to:\nName: Davidzo Ellen Mubwandarikwa\nNumber: +263783402890\nInclude reference as payment reference.",
     requirements: ["Transaction ID", "Sender email"],
     verificationUrl: "https://www.worldremit.com/en/track-transfer",
-  },
-  {
-    value: "remitly",
-    label: "Remitly",
-    instructions: "Send to bank account:\nBank: [Bank Name]\nAccount: XXXXXXXXXXXXX\nInclude reference in notes.",
-    requirements: ["Transfer number", "Sender name"],
-    verificationUrl: "https://www.remitly.com/track/status",
   }
 ];
 

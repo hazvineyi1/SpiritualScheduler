@@ -32,9 +32,9 @@ const QUESTION_TIERS = [
   { label: "Unlimited", value: 99, multiplier: 2.5 },
 ];
 const PAYMENT_METHODS = [
-  { value: "ecocash", label: "EcoCash", desc: "Zimbabwe EcoCash wallet", instructions: "Send to merchant code 987654. Use your booking reference as the remark." },
-  { value: "world_remit", label: "WorldRemit", desc: "International remittance", instructions: "Send to mobile money +263 77 123 4567. Include your reference in the note." },
-  { value: "remitly", label: "Remitly", desc: "International remittance", instructions: "Send to EcoCash wallet +263 77 123 4567. Include reference in transfer notes." },
+  { value: "ecocash", label: "EcoCash USD", desc: "Zimbabwe EcoCash (USD)", instructions: "Send USD to Davidzo Ellen Mubwandarikwa on +263783402890. Use your booking reference as the remark." },
+  { value: "innbucks", label: "InnBucks", desc: "InnBucks mobile wallet", instructions: "Send to Davidzo Ellen Mubwandarikwa on +263783402890. Include your booking reference." },
+  { value: "world_remit", label: "WorldRemit", desc: "International mobile money", instructions: "Send via the mobile money option (NOT cash pick-up) to Davidzo Ellen Mubwandarikwa on +263783402890. Include your reference in the note." },
 ] as const;
 
 export default function Book() {

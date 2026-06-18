@@ -323,7 +323,7 @@ export default function Dashboard() {
         <div className="grid sm:grid-cols-2 gap-3">
           {[
             { title: "By Format", entries: Object.entries(FORMAT_LABELS).map(([k, v]) => ({ label: v, count: appointments.filter(a => a.format === k).length })) },
-            { title: "By Payment", entries: ["ecocash","world_remit","remitly"].map(m => ({ label: m.replace("_"," "), count: appointments.filter(a => a.paymentMethod === m).length, total: appointments.filter(a => a.paymentMethod === m).reduce((s, a) => s + a.paymentAmount, 0) })) },
+            { title: "By Payment", entries: ["ecocash","innbucks","world_remit"].map(m => ({ label: m.replace("_"," "), count: appointments.filter(a => a.paymentMethod === m).length, total: appointments.filter(a => a.paymentMethod === m).reduce((s, a) => s + a.paymentAmount, 0) })) },
           ].map(({ title, entries }) => (
             <div key={title} className="bg-white rounded-lg border p-4" style={{ borderColor: BORDER }}>
               <p className="text-xs font-medium mb-3" style={{ color: "#9a8e7e" }}>{title}</p>
