@@ -1,132 +1,91 @@
-import { type User, type InsertUser, type Appointment, type InsertAppointment, type Payment, type InsertPayment } from "@shared/schema";
+import { type User, type InsertUser, type Appointment, type InsertAppointment } from "@shared/schema";
 
 export interface IStorage {
-  // User operations
   getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Appointment operations
-  getAppointment(id: number): Promise<Appointment | undefined>;
   getAllAppointments(): Promise<Appointment[]>;
-  getAppointmentsByClient(clientId: number): Promise<Appointment[]>;
-  getAppointmentsByDateRange(start: Date, end: Date): Promise<Appointment[]>;
+  getAppointment(id: number): Promise<Appointment | undefined>;
   createAppointment(appointment: InsertAppointment): Promise<Appointment>;
-  updateAppointmentStatus(id: number, status: string): Promise<Appointment>;
-
-  // Payment operations
-  getPayment(id: number): Promise<Payment | undefined>;
-  getPaymentsByAppointment(appointmentId: number): Promise<Payment[]>;
-  createPayment(payment: InsertPayment): Promise<Payment>;
-  updatePaymentStatus(id: number, status: string): Promise<Payment>;
+  updateAppointmentStatus(id: number, status: string, sessionLink?: string): Promise<Appointment>;
+  cancelAppointment(id: number): Promise<Appointment>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private appointments: Map<number, Appointment>;
-  private payments: Map<number, Payment>;
-  private currentIds: { users: number; appointments: number; payments: number };
+  private userIds = 1;
+  private appointmentIds = 1;
 
   constructor() {
     this.users = new Map();
     this.appointments = new Map();
-    this.payments = new Map();
-    this.currentIds = { users: 1, appointments: 1, payments: 1 };
+
+    const healer: User = { id: this.userIds++, email: "ellie@elliestratorbotanica.com", password: "healer123", role: "healer" };
+    this.users.set(healer.id, healer);
   }
 
-  // User operations
   async getUser(id: number): Promise<User | undefined> {
     return this.users.get(id);
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(u => u.email === email);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.currentIds.users++;
-    const user: User = { ...insertUser, id };
+    const id = this.userIds++;
+    const user: User = { id, email: insertUser.email, password: insertUser.password, role: insertUser.role ?? "client" };
     this.users.set(id, user);
     return user;
   }
 
-  // Appointment operations
+  async getAllAppointments(): Promise<Appointment[]> {
+    return Array.from(this.appointments.values()).sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
   async getAppointment(id: number): Promise<Appointment | undefined> {
     return this.appointments.get(id);
   }
 
-  async getAllAppointments(): Promise<Appointment[]> {
-    return Array.from(this.appointments.values());
-  }
-
-  async getAppointmentsByClient(clientId: number): Promise<Appointment[]> {
-    return Array.from(this.appointments.values()).filter(
-      (apt) => apt.clientId === clientId,
-    );
-  }
-
-  async getAppointmentsByDateRange(start: Date, end: Date): Promise<Appointment[]> {
-    return Array.from(this.appointments.values()).filter((apt) => {
-      const aptDate = new Date(apt.datetime);
-      return aptDate >= start && aptDate <= end;
-    });
-  }
-
-  async createAppointment(insertAppointment: InsertAppointment): Promise<Appointment> {
-    const id = this.currentIds.appointments++;
+  async createAppointment(data: InsertAppointment): Promise<Appointment> {
+    const id = this.appointmentIds++;
     const appointment: Appointment = {
-      ...insertAppointment,
       id,
-      datetime: new Date(insertAppointment.datetime),
-      status: "pending",
-      paymentStatus: "pending",
-      practitionerNotes: null,
+      readingId: data.readingId ?? null,
+      readingName: data.readingName,
+      category: data.category,
+      format: data.format,
+      datetime: data.datetime ?? null,
+      duration: data.duration ?? null,
+      questionCount: data.questionCount ?? null,
+      status: "pending_verification",
+      whatsappNumber: data.whatsappNumber,
+      paymentMethod: data.paymentMethod,
+      paymentAmount: data.paymentAmount,
+      paymentReference: data.paymentReference ?? null,
+      clientName: data.clientName ?? null,
+      intakeAnswers: data.intakeAnswers ?? null,
+      sessionLink: null,
+      createdAt: new Date().toISOString(),
     };
     this.appointments.set(id, appointment);
     return appointment;
   }
 
-  async updateAppointmentStatus(id: number, status: string): Promise<Appointment> {
-    const appointment = this.appointments.get(id);
-    if (!appointment) throw new Error("Appointment not found");
-
-    const updated = { ...appointment, status };
+  async updateAppointmentStatus(id: number, status: string, sessionLink?: string): Promise<Appointment> {
+    const apt = this.appointments.get(id);
+    if (!apt) throw new Error("Appointment not found");
+    const updated: Appointment = { ...apt, status, sessionLink: sessionLink ?? apt.sessionLink };
     this.appointments.set(id, updated);
     return updated;
   }
 
-  // Payment operations
-  async getPayment(id: number): Promise<Payment | undefined> {
-    return this.payments.get(id);
-  }
-
-  async getPaymentsByAppointment(appointmentId: number): Promise<Payment[]> {
-    return Array.from(this.payments.values()).filter(
-      (payment) => payment.appointmentId === appointmentId,
-    );
-  }
-
-  async createPayment(insertPayment: InsertPayment): Promise<Payment> {
-    const id = this.currentIds.payments++;
-    const payment: Payment = {
-      ...insertPayment,
-      id,
-      status: "pending",
-      reference: insertPayment.reference || null
-    };
-    this.payments.set(id, payment);
-    return payment;
-  }
-
-  async updatePaymentStatus(id: number, status: string): Promise<Payment> {
-    const payment = this.payments.get(id);
-    if (!payment) throw new Error("Payment not found");
-
-    const updated = { ...payment, status };
-    this.payments.set(id, updated);
-    return updated;
+  async cancelAppointment(id: number): Promise<Appointment> {
+    return this.updateAppointmentStatus(id, "cancelled");
   }
 }
 

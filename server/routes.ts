@@ -1,217 +1,139 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAppointmentSchema, insertPaymentSchema, insertUserSchema } from "@shared/schema";
-import { z } from "zod";
+import { insertAppointmentSchema } from "@shared/schema";
+import { READINGS, PRODUCTS, SEEDED_REVIEWS } from "@shared/types";
 import { ZodError } from "zod";
 
-const dateRangeSchema = z.object({
-  start: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid start date"),
-  end: z.string().refine((val) => !isNaN(Date.parse(val)), "Invalid end date"),
-});
+function generateSessionLink(format: string): string {
+  const id = Math.random().toString(36).substring(2, 10);
+  if (format === "video") return `https://meet.jit.si/EllieBotanica-${id}`;
+  if (format === "audio") return `https://meet.jit.si/EllieBotanica-Audio-${id}`;
+  if (format === "chat") return `https://wa.me/263771234567`;
+  if (format === "in_person") return "Ellie's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
+  return `https://elliestratorbotanica.com/delivery/${id}`;
+}
 
-const appointmentStatusSchema = z.object({
-  status: z.enum(["pending", "confirmed", "completed", "cancelled"])
-});
+function buildWhatsAppVerifyUrl(apt: any): string {
+  const link = apt.sessionLink || "";
+  const date = apt.datetime ? new Date(apt.datetime).toLocaleString("en-ZW", { timeZone: "Africa/Harare" }) : "as arranged";
+  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your payment for *${apt.readingName}* has been verified by Ellie.\n\n📅 *Session:* ${date} (CAT)\n🎥 *Format:* ${apt.format}\n🔗 *Link:* ${link}\n\nThank you for booking with Elliestrator Botanica. 🌿`;
+  return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // User routes
-  app.post("/api/users", async (req, res) => {
+  // Static data routes
+  app.get("/api/readings", (_req, res) => {
+    res.json({ success: true, data: READINGS });
+  });
+
+  app.get("/api/readings/:id", (req, res) => {
+    const id = parseInt(req.params.id);
+    const reading = READINGS.find(r => r.id === id);
+    if (!reading) return res.status(404).json({ success: false, error: "Reading not found" });
+    res.json({ success: true, data: reading });
+  });
+
+  app.get("/api/products", (_req, res) => {
+    res.json({ success: true, data: PRODUCTS });
+  });
+
+  app.get("/api/reviews", (_req, res) => {
+    res.json({ success: true, data: SEEDED_REVIEWS });
+  });
+
+  // Appointments
+  app.get("/api/appointments", async (_req, res) => {
     try {
-      const userData = insertUserSchema.parse(req.body);
-      const user = await storage.createUser(userData);
-      res.json({ success: true, data: user });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ 
-          success: false, 
-          error: "Validation error", 
-          details: error.errors 
-        });
-      } else {
-        console.error("User creation error:", error);
-        res.status(500).json({ 
-          success: false, 
-          error: "Internal server error",
-          message: "Failed to create user" 
-        });
-      }
+      const appointments = await storage.getAllAppointments();
+      res.json({ success: true, data: appointments });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch appointments" });
     }
   });
 
-  // Appointment routes
-  app.get("/api/appointments", async (req, res) => {
+  app.get("/api/appointments/:id", async (req, res) => {
     try {
-      if (req.query.start || req.query.end) {
-        const { start, end } = dateRangeSchema.parse({
-          start: req.query.start,
-          end: req.query.end
-        });
-        const appointments = await storage.getAppointmentsByDateRange(
-          new Date(start),
-          new Date(end)
-        );
-        return res.json({ success: true, data: appointments });
-      }
-
-      const appointments = await storage.getAllAppointments();
-      res.json({ success: true, data: appointments });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ 
-          success: false, 
-          error: "Invalid date range", 
-          details: error.errors 
-        });
-      } else {
-        console.error("Appointment fetch error:", error);
-        res.status(500).json({ 
-          success: false, 
-          error: "Internal server error",
-          message: "Failed to fetch appointments" 
-        });
-      }
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const apt = await storage.getAppointment(id);
+      if (!apt) return res.status(404).json({ success: false, error: "Not found" });
+      res.json({ success: true, data: apt });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch appointment" });
     }
   });
 
   app.post("/api/appointments", async (req, res) => {
     try {
-      const appointmentData = insertAppointmentSchema.parse(req.body);
-      const appointment = await storage.createAppointment(appointmentData);
-      res.json({ success: true, data: appointment });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ 
-          success: false, 
-          error: "Validation error", 
-          details: error.errors 
-        });
-      } else {
-        console.error("Appointment creation error:", error);
-        res.status(500).json({ 
-          success: false, 
-          error: "Internal server error",
-          message: "Failed to create appointment" 
-        });
+      const data = insertAppointmentSchema.parse(req.body);
+      const apt = await storage.createAppointment(data);
+      res.json({ success: true, data: apt });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: "Validation error", details: err.errors });
       }
+      console.error("Create appointment error:", err);
+      res.status(500).json({ success: false, error: "Failed to create appointment" });
     }
   });
 
   app.patch("/api/appointments/:id/status", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        throw new Error("Invalid appointment ID");
-      }
-
-      const { status } = appointmentStatusSchema.parse(req.body);
-      const appointment = await storage.updateAppointmentStatus(id, status);
-
-      if (!appointment) {
-        return res.status(404).json({ 
-          success: false, 
-          error: "Not found",
-          message: "Appointment not found" 
-        });
-      }
-
-      res.json({ success: true, data: appointment });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ 
-          success: false, 
-          error: "Invalid status", 
-          details: error.errors 
-        });
-      } else {
-        console.error("Status update error:", error);
-        res.status(500).json({ 
-          success: false, 
-          error: "Internal server error",
-          message: "Failed to update appointment status" 
-        });
-      }
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const { status } = req.body;
+      const allowed = ["pending_verification", "confirmed", "declined", "completed", "cancelled"];
+      if (!allowed.includes(status)) return res.status(400).json({ success: false, error: "Invalid status" });
+      const apt = await storage.updateAppointmentStatus(id, status);
+      res.json({ success: true, data: apt });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to update status" });
     }
   });
 
-  // Shared appointment route
-  app.get("/api/appointments/shared/:id", async (req, res) => {
+  app.post("/api/appointments/:id/verify", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        throw new Error("Invalid appointment ID");
-      }
-
-      const appointment = await storage.getAppointment(id);
-      if (!appointment) {
-        return res.status(404).json({ 
-          success: false, 
-          error: "Not found",
-          message: "Appointment not found" 
-        });
-      }
-
-      // Only send necessary information for shared view
-      const sharedAppointment = {
-        id: appointment.id,
-        type: appointment.type,
-        datetime: appointment.datetime,
-        duration: appointment.duration,
-        status: appointment.status,
-      };
-
-      res.json({ success: true, data: sharedAppointment });
-    } catch (error) {
-      console.error("Shared appointment fetch error:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: "Internal server error",
-        message: "Failed to fetch appointment" 
-      });
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const apt = await storage.getAppointment(id);
+      if (!apt) return res.status(404).json({ success: false, error: "Not found" });
+      const sessionLink = generateSessionLink(apt.format);
+      const updated = await storage.updateAppointmentStatus(id, "confirmed", sessionLink);
+      const whatsappUrl = buildWhatsAppVerifyUrl(updated);
+      res.json({ success: true, data: updated, whatsappUrl });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to verify appointment" });
     }
   });
 
-  // Payment routes
-  app.post("/api/payments", async (req, res) => {
-    try {
-      const paymentData = insertPaymentSchema.parse(req.body);
-      const payment = await storage.createPayment(paymentData);
-      res.json({ success: true, data: payment });
-    } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ 
-          success: false, 
-          error: "Validation error", 
-          details: error.errors 
-        });
-      } else {
-        console.error("Payment creation error:", error);
-        res.status(500).json({ 
-          success: false, 
-          error: "Internal server error",
-          message: "Failed to create payment" 
-        });
-      }
-    }
-  });
-
-  app.get("/api/payments/appointment/:id", async (req, res) => {
+  app.post("/api/appointments/:id/decline", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        throw new Error("Invalid appointment ID");
-      }
-
-      const payments = await storage.getPaymentsByAppointment(id);
-      res.json({ success: true, data: payments });
-    } catch (error) {
-      console.error("Payment fetch error:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: "Internal server error",
-        message: "Failed to fetch payments" 
-      });
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const updated = await storage.updateAppointmentStatus(id, "declined");
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to decline appointment" });
     }
+  });
+
+  app.post("/api/appointments/:id/cancel", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const updated = await storage.cancelAppointment(id);
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to cancel appointment" });
+    }
+  });
+
+  // Auth (demo)
+  app.post("/api/auth/login", async (req, res) => {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ success: false, error: "Email and password required" });
+    res.json({ success: true, data: { email, role: "healer", name: "Ellie" } });
   });
 
   const httpServer = createServer(app);
