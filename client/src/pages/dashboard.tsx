@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { Appointment } from "@shared/schema";
 import { FORMAT_LABELS } from "@shared/types";
-import { CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List, LogOut, AlertCircle } from "lucide-react";
+import {
+  CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List,
+  LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock,
+} from "lucide-react";
 import { format } from "date-fns";
 
 const BG     = "#fafaf7";
@@ -22,6 +25,7 @@ const GOLD   = "#8a6a2a";
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   pending_verification: { bg: "#fff8e6", color: "#8a6010" },
   confirmed:            { bg: "#eef3ea", color: "#2d6020" },
+  in_progress:          { bg: "#eafaf0", color: "#1f7a3f" },
   declined:             { bg: "#fef2f2", color: "#a03030" },
   completed:            { bg: "#eff6ff", color: "#2050a0" },
   cancelled:            { bg: "#f5f5f5", color: "#707060" },
@@ -34,13 +38,116 @@ const FORMAT_PILL: Record<string, string> = {
   in_person: "bg-rose-50 text-rose-700",
 };
 
-function AppointmentRow({ apt, onVerify, onDecline, onCancel, isLoading }: {
-  apt: Appointment; onVerify: () => void; onDecline: () => void; onCancel: () => void; isLoading: boolean;
+// ---- Session timing -------------------------------------------------------
+type TimingKey = "in_progress" | "live" | "starting_soon" | "upcoming" | "ended" | "async" | "done";
+interface Timing { key: TimingKey; label: string; ms: number; }
+
+const TIMING_STYLE: Record<TimingKey, { bg: string; color: string; pulse?: boolean }> = {
+  in_progress:   { bg: "#1f7a3f", color: "#ffffff", pulse: true },
+  live:          { bg: "#eafaf0", color: "#1f7a3f", pulse: true },
+  starting_soon: { bg: "#fffbf0", color: GOLD, pulse: true },
+  upcoming:      { bg: "#f3f1ec", color: "#7a7060" },
+  ended:         { bg: "#eff6ff", color: "#2050a0" },
+  async:         { bg: "#f3f1ec", color: "#7a7060" },
+  done:          { bg: "#eff6ff", color: "#2050a0" },
+};
+
+function rel(ms: number): string {
+  const m = Math.max(1, Math.round(Math.abs(ms) / 60000));
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60), mm = m % 60;
+  return mm ? `${h}h ${mm}m` : `${h}h`;
+}
+
+function sessionTiming(apt: Appointment, now: number): Timing {
+  if (apt.status === "in_progress") return { key: "in_progress", label: "In session", ms: 0 };
+  if (apt.status === "completed")   return { key: "done", label: "Completed", ms: 0 };
+  if (!apt.datetime) return { key: "async", label: "Async delivery", ms: 0 };
+  const start = new Date(apt.datetime).getTime();
+  const end = start + (apt.duration || 30) * 60000;
+  if (now < start - 15 * 60000) return { key: "upcoming", label: `In ${rel(start - now)}`, ms: start - now };
+  if (now < start)              return { key: "starting_soon", label: `Starts in ${rel(start - now)}`, ms: start - now };
+  if (now <= end)               return { key: "live", label: `Live · ${rel(end - now)} left`, ms: end - now };
+  return { key: "ended", label: `Ended ${rel(now - end)} ago`, ms: now - end };
+}
+
+function clientWaLink(apt: Appointment, msg: string): string | null {
+  if (!apt.whatsappNumber) return null;
+  return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
+}
+
+function startMessage(apt: Appointment): string {
+  const fmt = FORMAT_LABELS[apt.format] || apt.format;
+  return `Hi ${apt.clientName || "there"}! ✦ This is Ellie from Elliestrator Botanica 🌿 I'm ready to begin your ${apt.readingName} (${fmt}) session now. Shall we start?`;
+}
+
+// ---- Live session card ----------------------------------------------------
+function SessionCard({ apt, now, onStart, onComplete, onCancel, busy }: {
+  apt: Appointment; now: number;
+  onStart: (a: Appointment) => void; onComplete: (id: number) => void; onCancel: (id: number) => void; busy: boolean;
+}) {
+  const t = sessionTiming(apt, now);
+  const st = TIMING_STYLE[t.key];
+  const live = t.key === "in_progress" || t.key === "live" || t.key === "starting_soon";
+  return (
+    <div className="rounded-lg border bg-white p-3" style={{ borderColor: live ? `${GN}55` : BORDER }}>
+      <div className="flex items-start gap-2 mb-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-sm font-medium truncate" style={{ color: DARK }}>{apt.readingName}</span>
+            <span className={`text-[10px] px-1.5 rounded font-medium ${FORMAT_PILL[apt.format] || ""}`}>{FORMAT_LABELS[apt.format] || apt.format}</span>
+          </div>
+          <p className="text-xs mt-0.5 truncate" style={{ color: "#9a8e7e" }}>
+            {apt.clientName || "Anonymous"} · {apt.whatsappNumber}
+            {apt.datetime ? ` · ${format(new Date(apt.datetime), "dd MMM HH:mm")}` : ""}
+          </p>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 flex-shrink-0" style={{ background: st.bg, color: st.color }}>
+          {st.pulse && (
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-70" style={{ background: st.color }} />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: st.color }} />
+            </span>
+          )}
+          {t.label}
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {apt.status === "confirmed" && (
+          <Button size="sm" className="h-7 text-xs px-2.5 text-white flex-1" style={{ background: GN }} disabled={busy} onClick={() => onStart(apt)}>
+            <PlayCircle className="h-3.5 w-3.5 mr-1" /> Start on WhatsApp
+          </Button>
+        )}
+        {apt.status === "in_progress" && (
+          <>
+            <a href={clientWaLink(apt, startMessage(apt)) || "#"} target="_blank" rel="noreferrer" className="flex-1">
+              <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 w-full" style={{ color: GN, borderColor: `${GN}55` }}>
+                <MessageCircle className="h-3.5 w-3.5 mr-1" /> Open chat
+              </Button>
+            </a>
+            <Button size="sm" className="h-7 text-xs px-2.5 text-white flex-1" style={{ background: "#2050a0" }} disabled={busy} onClick={() => onComplete(apt.id)}>
+              <CheckSquare className="h-3.5 w-3.5 mr-1" /> End session
+            </Button>
+          </>
+        )}
+        {apt.status === "confirmed" && (
+          <Button size="sm" variant="ghost" className="h-7 text-xs px-2" style={{ color: "#b0a898" }} disabled={busy} onClick={() => onCancel(apt.id)}>Cancel</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---- Appointment row (table) ----------------------------------------------
+function AppointmentRow({ apt, now, onStart, onComplete, onVerify, onDecline, onCancel, busy }: {
+  apt: Appointment; now: number;
+  onStart: (a: Appointment) => void; onComplete: (id: number) => void;
+  onVerify: (id: number) => void; onDecline: (id: number) => void; onCancel: (id: number) => void; busy: boolean;
 }) {
   const sb = STATUS_BADGE[apt.status] || { bg: "#f5f5f5", color: "#707060" };
-  const waLink = apt.whatsappNumber
-    ? `https://wa.me/${apt.whatsappNumber.replace(/\D/g,"")}?text=${encodeURIComponent(`Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Regarding your ${apt.readingName} booking…`)}`
-    : null;
+  const chat = clientWaLink(apt, `Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Regarding your ${apt.readingName} booking…`);
+  const showTiming = apt.status === "confirmed" || apt.status === "in_progress";
+  const t = showTiming ? sessionTiming(apt, now) : null;
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-[#f5f1eb] border-t" style={{ borderColor: "#f0ece4" }}>
@@ -48,30 +155,43 @@ function AppointmentRow({ apt, onVerify, onDecline, onCancel, isLoading }: {
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
           <span className="text-sm font-medium" style={{ color: DARK }}>{apt.readingName}</span>
           <span className={`text-[10px] px-1.5 rounded font-medium ${FORMAT_PILL[apt.format] || ""}`}>{FORMAT_LABELS[apt.format] || apt.format}</span>
-          <span className="text-[10px] px-1.5 rounded font-medium" style={{ background: sb.bg, color: sb.color }}>{apt.status.replace(/_/g," ")}</span>
+          <span className="text-[10px] px-1.5 rounded font-medium" style={{ background: sb.bg, color: sb.color }}>{apt.status.replace(/_/g, " ")}</span>
+          {t && (
+            <span className="text-[10px] px-1.5 rounded font-medium" style={{ background: TIMING_STYLE[t.key].bg, color: TIMING_STYLE[t.key].color }}>{t.label}</span>
+          )}
         </div>
         <div className="text-xs space-x-2" style={{ color: "#9a8e7e" }}>
           <span>{apt.clientName || "Anonymous"}</span>
           <span>·</span>
           <span>{apt.datetime ? format(new Date(apt.datetime), "dd MMM, HH:mm") : "Async"}</span>
           <span>·</span>
-          <span>${apt.paymentAmount} · {apt.paymentMethod?.replace("_"," ")}</span>
+          <span>${apt.paymentAmount} · {apt.paymentMethod?.replace("_", " ")}</span>
         </div>
       </div>
       <div className="flex items-center gap-1.5 flex-shrink-0">
         {apt.status === "pending_verification" && <>
-          <Button size="sm" className="h-7 text-xs px-2.5 text-white" style={{ background: "#4a7040" }} onClick={onVerify} disabled={isLoading}>
+          <Button size="sm" className="h-7 text-xs px-2.5 text-white" style={{ background: GN }} onClick={() => onVerify(apt.id)} disabled={busy}>
             <CheckCircle2 className="h-3.5 w-3.5 mr-1" />Verify
           </Button>
-          <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 text-red-600 border-red-200 hover:bg-red-50" onClick={onDecline} disabled={isLoading}>
+          <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 text-red-600 border-red-200 hover:bg-red-50" onClick={() => onDecline(apt.id)} disabled={busy}>
             <X className="h-3.5 w-3.5" />
           </Button>
         </>}
         {apt.status === "confirmed" && (
-          <Button size="sm" variant="outline" className="h-7 text-xs px-2.5" style={{ color: "#9a8e7e" }} onClick={onCancel} disabled={isLoading}>Cancel</Button>
+          <Button size="sm" className="h-7 text-xs px-2.5 text-white" style={{ background: GN }} onClick={() => onStart(apt)} disabled={busy}>
+            <PlayCircle className="h-3.5 w-3.5 mr-1" />Start
+          </Button>
         )}
-        {waLink && (
-          <a href={waLink} target="_blank" rel="noreferrer">
+        {apt.status === "in_progress" && (
+          <Button size="sm" className="h-7 text-xs px-2.5 text-white" style={{ background: "#2050a0" }} onClick={() => onComplete(apt.id)} disabled={busy}>
+            <CheckSquare className="h-3.5 w-3.5 mr-1" />End
+          </Button>
+        )}
+        {(apt.status === "confirmed") && (
+          <Button size="sm" variant="outline" className="h-7 text-xs px-2.5" style={{ color: "#9a8e7e" }} onClick={() => onCancel(apt.id)} disabled={busy}>Cancel</Button>
+        )}
+        {chat && (
+          <a href={chat} target="_blank" rel="noreferrer">
             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" style={{ color: "#2d7a6a" }}><MessageCircle className="h-3.5 w-3.5" /></Button>
           </a>
         )}
@@ -144,11 +264,17 @@ export default function Dashboard() {
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [filter, setFilter] = useState("all");
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 20000);
+    return () => clearInterval(t);
+  }, []);
 
   const { data: appointments = [], isLoading } = useQuery<Appointment[]>({
     queryKey: ["/api/appointments"],
     enabled: isLoggedIn,
-    refetchInterval: 30000,
+    refetchInterval: 20000,
   });
 
   const mutate = useMutation({
@@ -162,11 +288,22 @@ export default function Dashboard() {
       qc.invalidateQueries({ queryKey: ["/api/appointments"] });
       if (vars.action === "verify" && data.whatsappUrl) {
         window.open(data.whatsappUrl, "_blank");
-        toast({ title: "Booking verified", description: "WhatsApp opened with confirmation." });
+        toast({ title: "Booking verified", description: "Confirmation opened in WhatsApp." });
+      } else if (vars.action === "start") {
+        toast({ title: "Session started", description: "Opened WhatsApp with the client." });
+      } else if (vars.action === "complete") {
+        toast({ title: "Session completed" });
       } else toast({ title: "Updated" });
     },
     onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
   });
+
+  const act = (id: number, action: string) => mutate.mutate({ id, action });
+  const startSession = (apt: Appointment) => {
+    const link = clientWaLink(apt, startMessage(apt));
+    if (link) window.open(link, "_blank");
+    mutate.mutate({ id: apt.id, action: "start" });
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,12 +345,24 @@ export default function Dashboard() {
 
   const pending   = appointments.filter(a => a.status === "pending_verification");
   const confirmed = appointments.filter(a => a.status === "confirmed");
+  const inProgress = appointments.filter(a => a.status === "in_progress");
   const completed = appointments.filter(a => a.status === "completed");
-  const revenue   = appointments.filter(a => ["confirmed","completed"].includes(a.status)).reduce((s, a) => s + a.paymentAmount, 0);
+  const revenue   = appointments.filter(a => ["confirmed","in_progress","completed"].includes(a.status)).reduce((s, a) => s + a.paymentAmount, 0);
+
+  // Active sessions (confirmed + in progress), sorted by soonest first.
+  const active = [...confirmed, ...inProgress].sort((a, b) => {
+    const ta = a.datetime ? new Date(a.datetime).getTime() : Infinity;
+    const tb = b.datetime ? new Date(b.datetime).getTime() : Infinity;
+    return ta - tb;
+  });
+  const liveNow = active.filter(a => {
+    const k = sessionTiming(a, now).key;
+    return k === "in_progress" || k === "live" || k === "starting_soon";
+  });
 
   const filtered = filter === "all" ? appointments
     : filter === "pending"   ? pending
-    : filter === "confirmed" ? confirmed
+    : filter === "sessions"  ? active
     : filter === "completed" ? completed
     : appointments.filter(a => ["cancelled","declined"].includes(a.status));
 
@@ -234,11 +383,13 @@ export default function Dashboard() {
 
       <div className="max-w-5xl mx-auto px-4 py-5 space-y-4">
         {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
             { icon: Users, label: "Total", value: appointments.length },
             { icon: Clock, label: "Awaiting", value: pending.length, color: "#8a6010" },
-            { icon: CheckCircle2, label: "Confirmed", value: confirmed.length, color: GN },
+            { icon: CalendarClock, label: "Upcoming", value: confirmed.length, color: GN },
+            { icon: Radio, label: "Live now", value: liveNow.length, color: liveNow.length ? "#1f7a3f" : "#9a8e7e" },
+            { icon: CheckCircle2, label: "Completed", value: completed.length, color: "#2050a0" },
             { icon: DollarSign, label: "Revenue", value: `$${revenue}`, color: GN },
           ].map(({ icon: Icon, label, value, color }) => (
             <div key={label} className="bg-white rounded-lg border p-3 flex items-center gap-3" style={{ borderColor: BORDER }}>
@@ -251,7 +402,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        {/* Waiting Now */}
+        {/* Needs verification */}
         {pending.length > 0 && (
           <div className="rounded-lg border overflow-hidden" style={{ borderColor: `${GOLD}55` }}>
             <div className="px-4 py-2.5 flex items-center gap-2 border-b" style={{ background: "#fffbf0", borderColor: `${GOLD}33` }}>
@@ -259,19 +410,22 @@ export default function Dashboard() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#c9a96e" }} />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: "#c9a96e" }} />
               </span>
-              <span className="text-sm font-medium" style={{ color: GOLD }}>Waiting for verification — {pending.length}</span>
+              <span className="text-sm font-medium" style={{ color: GOLD }}>Payments to verify — {pending.length}</span>
             </div>
             {pending.map((a, i) => (
               <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 bg-white" style={{ borderTop: i > 0 ? "1px solid #f5f0e8" : undefined }}>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate" style={{ color: DARK }}>{a.readingName}</p>
-                  <p className="text-xs" style={{ color: "#9a8e7e" }}>{a.clientName || "Anonymous"} · ${a.paymentAmount} · {a.paymentMethod?.replace("_"," ")}</p>
+                  <p className="text-xs" style={{ color: "#9a8e7e" }}>
+                    {a.clientName || "Anonymous"} · ${a.paymentAmount} · {a.paymentMethod?.replace("_"," ")}
+                    {a.paymentReference ? ` · ref ${a.paymentReference}` : ""}
+                  </p>
                 </div>
                 <div className="flex gap-1.5">
-                  <Button size="sm" className="h-7 text-xs text-white" style={{ background: GN }} onClick={() => mutate.mutate({ id: a.id, action: "verify" })} disabled={mutate.isPending}>
+                  <Button size="sm" className="h-7 text-xs text-white" style={{ background: GN }} onClick={() => act(a.id, "verify")} disabled={mutate.isPending}>
                     <CheckCircle2 className="h-3.5 w-3.5 mr-1" />Verify
                   </Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200" onClick={() => mutate.mutate({ id: a.id, action: "decline" })} disabled={mutate.isPending}>
+                  <Button size="sm" variant="outline" className="h-7 text-xs text-red-600 border-red-200" onClick={() => act(a.id, "decline")} disabled={mutate.isPending}>
                     <X className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -280,11 +434,44 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Appointments */}
+        {/* Live & upcoming sessions */}
+        <div className="rounded-lg border overflow-hidden" style={{ borderColor: liveNow.length ? `${GN}55` : BORDER }}>
+          <div className="px-4 py-2.5 flex items-center gap-2 border-b" style={{ background: HERO, borderColor: "#e2e8da" }}>
+            <Radio className="h-4 w-4" style={{ color: GN }} />
+            <span className="text-sm font-medium" style={{ color: DARK }}>Sessions</span>
+            {liveNow.length > 0 && (
+              <span className="text-[10px] px-2 py-0.5 rounded-full font-medium text-white flex items-center gap-1" style={{ background: "#1f7a3f" }}>
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-70 bg-white" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white" />
+                </span>
+                {liveNow.length} live
+              </span>
+            )}
+            <span className="ml-auto text-xs" style={{ color: "#9a8e7e" }}>{active.length} active</span>
+          </div>
+          {active.length === 0 ? (
+            <div className="py-8 text-center bg-white">
+              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd8ce" }} />
+              <p className="text-sm" style={{ color: "#9a8e7e" }}>No confirmed sessions yet.</p>
+              <p className="text-xs mt-0.5" style={{ color: "#b0a898" }}>Verify a payment to schedule a session.</p>
+            </div>
+          ) : (
+            <div className="p-3 grid sm:grid-cols-2 gap-2.5 bg-white">
+              {active.map(a => (
+                <SessionCard key={a.id} apt={a} now={now}
+                  onStart={startSession} onComplete={(id) => act(id, "complete")} onCancel={(id) => act(id, "cancel")}
+                  busy={mutate.isPending} />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* All appointments */}
         <div className="bg-white rounded-lg border" style={{ borderColor: BORDER }}>
           <div className="flex items-center justify-between px-4 py-2.5 border-b" style={{ borderColor: "#f0ece4" }}>
-            <div className="flex gap-0.5">
-              {[["all",`All (${appointments.length})`],["pending",`Pending (${pending.length})`],["confirmed",`Confirmed (${confirmed.length})`],["completed",`Done (${completed.length})`]].map(([v,l]) => (
+            <div className="flex gap-0.5 flex-wrap">
+              {[["all",`All (${appointments.length})`],["pending",`Pending (${pending.length})`],["sessions",`Sessions (${active.length})`],["completed",`Done (${completed.length})`],["archived","Archived"]].map(([v,l]) => (
                 <button key={v} onClick={() => setFilter(v)}
                   className="px-2.5 py-1 rounded text-xs transition-colors"
                   style={{ background: filter === v ? HERO : "transparent", color: filter === v ? GN : "#9a8e7e", fontWeight: filter === v ? 600 : 400 }}>
@@ -310,11 +497,13 @@ export default function Dashboard() {
             </div>
           ) : (
             <div>{filtered.map(a => (
-              <AppointmentRow key={a.id} apt={a}
-                onVerify={() => mutate.mutate({ id: a.id, action: "verify" })}
-                onDecline={() => mutate.mutate({ id: a.id, action: "decline" })}
-                onCancel={() => mutate.mutate({ id: a.id, action: "cancel" })}
-                isLoading={mutate.isPending} />
+              <AppointmentRow key={a.id} apt={a} now={now}
+                onStart={startSession}
+                onComplete={(id) => act(id, "complete")}
+                onVerify={(id) => act(id, "verify")}
+                onDecline={(id) => act(id, "decline")}
+                onCancel={(id) => act(id, "cancel")}
+                busy={mutate.isPending} />
             ))}</div>
           )}
         </div>

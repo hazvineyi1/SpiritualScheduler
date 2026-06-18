@@ -1,0 +1,1 @@
+- [Dev server restart](dev-server-restart.md) — server/** edits need a workflow restart before API testing; Vite HMR only covers the client.

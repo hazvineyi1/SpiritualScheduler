@@ -106,6 +106,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/appointments/:id/start", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const apt = await storage.getAppointment(id);
+      if (!apt) return res.status(404).json({ success: false, error: "Not found" });
+      if (apt.status !== "confirmed") {
+        return res.status(409).json({ success: false, error: "Only a confirmed session can be started" });
+      }
+      const updated = await storage.updateAppointmentStatus(id, "in_progress");
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to start session" });
+    }
+  });
+
+  app.post("/api/appointments/:id/complete", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
+      const apt = await storage.getAppointment(id);
+      if (!apt) return res.status(404).json({ success: false, error: "Not found" });
+      if (apt.status !== "in_progress" && apt.status !== "confirmed") {
+        return res.status(409).json({ success: false, error: "Only an active session can be completed" });
+      }
+      const updated = await storage.updateAppointmentStatus(id, "completed");
+      res.json({ success: true, data: updated });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to complete session" });
+    }
+  });
+
   app.post("/api/appointments/:id/decline", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
