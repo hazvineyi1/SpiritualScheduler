@@ -72,7 +72,7 @@ export class MemStorage implements IStorage {
       blockedSlots: [],
     };
 
-    const healer: User = { id: this.userIds++, email: "ellie@elliestratorbotanica.com", password: "healer123", role: "healer" };
+    const healer: User = { id: this.userIds++, email: "vashava@vashava.com", password: "healer123", role: "healer" };
     this.users.set(healer.id, healer);
 
     this.seedAppointments();
@@ -114,7 +114,7 @@ export class MemStorage implements IStorage {
       { readingName: "Office Visit — In Person", category: "live_in_person", format: "in_person",
         datetime: mins(-1440), duration: 60, status: "completed", whatsappNumber: "263777778899",
         paymentMethod: "ecocash", paymentAmount: 80, paymentReference: "EC-11920", clientName: "Tendai R.",
-        sessionLink: "Ellie's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp." },
+        sessionLink: "VaShava's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp." },
       // Completed — last week
       { readingName: "Healing & Wellbeing Session", category: "healing_wellbeing", format: "audio",
         datetime: mins(-10080), duration: 30, status: "completed", whatsappNumber: "263778889900",
@@ -191,12 +191,12 @@ export class MemStorage implements IStorage {
     if (when.getTime() < Date.now()) throw new SlotUnavailableError("That time is in the past — please pick another slot.");
     const { weekday, hour, dateStr, minute } = harareParts(when);
     const cfg = this.availability;
-    if (!cfg.weekdays.includes(weekday)) throw new SlotUnavailableError("Ellie isn't available on that day. Please pick another.");
+    if (!cfg.weekdays.includes(weekday)) throw new SlotUnavailableError("VaShava isn't available on that day. Please pick another.");
     // Must land exactly on a generated slot boundary within working hours.
     const totalMins = hour * 60 + minute;
     const openMins = cfg.startHour * 60;
     const closeMins = cfg.endHour * 60;
-    if (totalMins < openMins || totalMins >= closeMins) throw new SlotUnavailableError("That time is outside Ellie's working hours.");
+    if (totalMins < openMins || totalMins >= closeMins) throw new SlotUnavailableError("That time is outside VaShava's working hours.");
     if ((totalMins - openMins) % cfg.slotMinutes !== 0) throw new SlotUnavailableError("That isn't a valid session start time. Please pick a slot from the calendar.");
     const canonical = slotIso(dateStr, hour, minute);
     if (cfg.blockedSlots.includes(canonical)) throw new SlotUnavailableError("That slot has been closed. Please pick another.");

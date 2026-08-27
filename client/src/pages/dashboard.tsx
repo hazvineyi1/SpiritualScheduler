@@ -16,16 +16,16 @@ import {
 import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
 
-const BG     = "#fafaf7";
-const HERO   = "#eef3ea";
-const BORDER = "#ddd8ce";
-const GN     = "#4a7040";
-const DARK   = "#263320";
+const BG     = "#ffffff";
+const HERO   = "#f7f6f2";
+const BORDER = "#e2e0da";
+const GN     = "#b8962e";
+const DARK   = "#111111";
 const GOLD   = "#8a6a2a";
 
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   pending_verification: { bg: "#fff8e6", color: "#8a6010" },
-  confirmed:            { bg: "#eef3ea", color: "#2d6020" },
+  confirmed:            { bg: "#f7f6f2", color: "#8a6a2a" },
   in_progress:          { bg: "#eafaf0", color: "#1f7a3f" },
   declined:             { bg: "#fef2f2", color: "#a03030" },
   completed:            { bg: "#eff6ff", color: "#2050a0" },
@@ -79,7 +79,7 @@ function clientWaLink(apt: Appointment, msg: string): string | null {
 
 function startMessage(apt: Appointment): string {
   const fmt = FORMAT_LABELS[apt.format] || apt.format;
-  return `Hi ${apt.clientName || "there"}! ✦ This is Ellie from Elliestrator Botanica 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge — otherwise we'll need to reschedule.`;
+  return `Hi ${apt.clientName || "there"}! ✦ This is VaShava from VaShava 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge — otherwise we'll need to reschedule.`;
 }
 
 // ---- Live session card ----------------------------------------------------
@@ -353,7 +353,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="w-full max-w-xs">
         <div className="text-center mb-6">
-          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>✦ Elliestrator Botanica</p>
+          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>✦ VaShava</p>
           <h1 className="text-xl font-semibold" style={{ color: DARK }}>Healer Dashboard</h1>
         </div>
         <div className="bg-white rounded-xl p-6 border" style={{ borderColor: BORDER }}>
@@ -371,7 +371,7 @@ export default function Dashboard() {
               {login.isPending ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-          <p className="text-center text-xs mt-3" style={{ color: "#b0a898" }}>Demo login: ellie@elliestratorbotanica.com / healer123</p>
+          <p className="text-center text-xs mt-3" style={{ color: "#b0a898" }}>Demo login: vashava@vashava.com / healer123</p>
         </div>
         <p className="text-center mt-4">
           <Link href="/"><span className="text-xs cursor-pointer" style={{ color: "#9a8e7e" }}>← Back to storefront</span></Link>
@@ -408,7 +408,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-white" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="text-sm font-semibold" style={{ color: GN }}>✦ Ellie's Dashboard</span>
+          <span className="text-sm font-semibold" style={{ color: GN }}>✦ VaShava's Dashboard</span>
           <div className="flex items-center gap-1">
             <Link href="/"><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
             <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#9a8e7e" }} onClick={() => logout.mutate()} disabled={logout.isPending}>
@@ -489,7 +489,7 @@ export default function Dashboard() {
           </div>
           {active.length === 0 ? (
             <div className="py-8 text-center bg-white">
-              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd8ce" }} />
+              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#e2e0da" }} />
               <p className="text-sm" style={{ color: "#9a8e7e" }}>No confirmed sessions yet.</p>
               <p className="text-xs mt-0.5" style={{ color: "#b0a898" }}>Verify a payment to schedule a session.</p>
             </div>
@@ -531,7 +531,7 @@ export default function Dashboard() {
             <div className="p-4 space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center">
-              <AlertCircle className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd8ce" }} />
+              <AlertCircle className="h-7 w-7 mx-auto mb-2" style={{ color: "#e2e0da" }} />
               <p className="text-sm" style={{ color: "#9a8e7e" }}>No {filter === "all" ? "" : filter} appointments yet.</p>
               {filter === "all" && <Link href="/"><Button variant="link" className="mt-1 text-xs" style={{ color: GN }}>Go to storefront →</Button></Link>}
             </div>

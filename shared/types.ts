@@ -96,7 +96,7 @@ export const READINGS: Reading[] = [
   // Live & In-Person
   { id: 39, name: "Unlimited Cards — 1 Hour Reading", category: "live_in_person", price: 120, description: "A full 60-minute unrestricted tarot and oracle card reading — ask everything on your mind.", formats: D, isAdult: false, isFixed: true },
   { id: 40, name: "Couple Reading", category: "live_in_person", price: 120, description: "A joint 60-minute session for couples seeking spiritual clarity, healing, and guidance together.", formats: D, isAdult: false, isFixed: true },
-  { id: 41, name: "Office Visit Reading", category: "live_in_person", price: 180, description: "Ellie visits your office or workspace in Harare for a powerful in-person group reading experience.", formats: ["in_person"], isAdult: false, isFixed: true },
+  { id: 41, name: "Office Visit Reading", category: "live_in_person", price: 180, description: "VaShava visits your office or workspace in Harare for a powerful in-person group reading experience.", formats: ["in_person"], isAdult: false, isFixed: true },
 ];
 
 export const PRODUCTS: Product[] = [
@@ -121,13 +121,13 @@ export const PRODUCTS: Product[] = [
 ];
 
 export const SEEDED_REVIEWS: Review[] = [
-  { id: 1, clientName: "Tamara N.", rating: 5, comment: "Ellie connected with my grandmother immediately. The details she brought through were specific and deeply comforting. I'm still in awe. This was everything I needed and more.", readingName: "Connecting with a Passed Loved One", date: "2026-05-14" },
+  { id: 1, clientName: "Tamara N.", rating: 5, comment: "VaShava connected with my grandmother immediately. The details she brought through were specific and deeply comforting. I'm still in awe. This was everything I needed and more.", readingName: "Connecting with a Passed Loved One", date: "2026-05-14" },
   { id: 2, clientName: "Marcus O.", rating: 5, comment: "My General Reading was incredibly accurate about the career crossroads I was at. The guidance was practical and spiritually grounded. I've already booked my second session.", readingName: "General Reading", date: "2026-05-02" },
-  { id: 3, clientName: "Patience K.", rating: 5, comment: "The Are You Compatible reading gave me clarity I had been searching for for months. Ellie doesn't just read cards — she truly sees. Highly recommend to anyone questioning a relationship.", readingName: "Are You Compatible?", date: "2026-04-20" },
+  { id: 3, clientName: "Patience K.", rating: 5, comment: "The Are You Compatible reading gave me clarity I had been searching for for months. VaShava doesn't just read cards — she truly sees. Highly recommend to anyone questioning a relationship.", readingName: "Are You Compatible?", date: "2026-04-20" },
   { id: 4, clientName: "Tendai M.", rating: 5, comment: "I was sceptical about remote ancestral work but the Hakata reading blew my mind. Things she said about my late father were things she could not have known. A real and sacred gift.", readingName: "Hakata (Bone Throwing / Osteomancy)", date: "2026-04-08" },
   { id: 5, clientName: "Aisha D.", rating: 4, comment: "The Shadow Work Spread was intense but so needed. She held a beautiful, safe space for very deep material. I have been journalling non-stop since. Truly transformative work.", readingName: "Shadow Work Spread", date: "2026-03-25" },
-  { id: 6, clientName: "Chidi A.", rating: 5, comment: "Booked the Seeking Prosperity reading and within three weeks the exact blockages she identified had shifted. I got the job. I got the flat. Ellie is the real deal — full stop.", readingName: "Seeking Prosperity", date: "2026-03-10" },
-  { id: 7, clientName: "Rudo M.", rating: 5, comment: "As a Zimbabwean in the diaspora, finding someone who understands Shona tradition AND has this level of gift is rare. Ellie is exceptional. The ZINATHA verification gave me confidence to book.", readingName: "Ancestor Reading", date: "2026-02-18" },
+  { id: 6, clientName: "Chidi A.", rating: 5, comment: "Booked the Seeking Prosperity reading and within three weeks the exact blockages she identified had shifted. I got the job. I got the flat. VaShava is the real deal — full stop.", readingName: "Seeking Prosperity", date: "2026-03-10" },
+  { id: 7, clientName: "Rudo M.", rating: 5, comment: "As a Zimbabwean in the diaspora, finding someone who understands Shona tradition AND has this level of gift is rare. VaShava is exceptional. The ZINATHA verification gave me confidence to book.", readingName: "Ancestor Reading", date: "2026-02-18" },
 ];
 
 export const CATEGORY_LABELS: Record<string, string> = {

@@ -6,10 +6,10 @@ import { adjustToZimbabweTime } from "@/lib/utils";
 import { Loader2, Lock, CheckCircle2 } from "lucide-react";
 import type { AvailabilityConfig, DaySlot } from "@shared/schema";
 
-const HERO   = "#eef3ea";
-const BORDER = "#ddd8ce";
-const GN     = "#4a7040";
-const DARK   = "#263320";
+const HERO   = "#f7f6f2";
+const BORDER = "#e2e0da";
+const GN     = "#b8962e";
+const DARK   = "#111111";
 
 interface BookingCalendarProps {
   selected: string | null;
@@ -74,7 +74,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
         />
         <div className="px-3 pb-3 pt-1 flex items-center gap-3 text-[11px]" style={{ color: "#9a8e7e" }}>
           <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: GN }} /> Open</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "#ddd8ce" }} /> Closed / past</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "#e2e0da" }} /> Closed / past</span>
         </div>
       </div>
 
@@ -99,7 +99,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
               </div>
             ) : !dayIsOpen ? (
               <div className="py-8 text-center">
-                <p className="text-sm" style={{ color: "#9a8e7e" }}>Ellie isn't available on this day.</p>
+                <p className="text-sm" style={{ color: "#9a8e7e" }}>VaShava isn't available on this day.</p>
                 <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Please choose another date.</p>
               </div>
             ) : bookable.length === 0 ? (
@@ -135,7 +135,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
                         key={slot.datetime}
                         className="rounded-lg border py-2 text-sm flex items-center justify-center gap-1.5 cursor-not-allowed"
                         style={{ borderColor: "#ece8df", background: "#f7f5f0", color: "#bdb6a8" }}
-                        title={slot.status === "booked" ? "Already booked" : "Closed by Ellie"}
+                        title={slot.status === "booked" ? "Already booked" : "Closed by VaShava"}
                       >
                         <Lock className="h-3 w-3" />
                         <span className="line-through">{slot.label}</span>

@@ -21,11 +21,11 @@ const ALL_CATS = Object.keys(CATEGORY_LABELS) as ReadingCategory[];
 const PROD_CATS = ["incense", "crystals", "jewellery", "oils"] as const;
 const ELLIE_WA = "https://wa.me/263771234567";
 
-const BG     = "#fafaf7";
-const HERO   = "#eef3ea";
-const BORDER = "#ddd8ce";
-const GN     = "#4a7040";
-const DARK   = "#263320";
+const BG     = "#ffffff";
+const HERO   = "#f7f6f2";
+const BORDER = "#e2e0da";
+const GN     = "#b8962e";
+const DARK   = "#111111";
 const GOLD   = "#8a6a2a";
 
 export default function Home() {
@@ -73,7 +73,7 @@ export default function Home() {
       {/* NAV */}
       <nav className="sticky top-0 z-50 border-b" style={{ background: HERO, borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="font-semibold text-sm" style={{ color: DARK }}>✦ Elliestrator Botanica</span>
+          <span className="font-semibold text-sm" style={{ color: DARK }}>✦ VaShava</span>
           <div className="flex items-center gap-2">
             <a href={ELLIE_WA} target="_blank" rel="noreferrer">
               <Button size="sm" className="h-7 text-xs gap-1.5 text-white" style={{ background: GN }}>
@@ -94,7 +94,7 @@ export default function Home() {
             <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs border mb-2" style={{ borderColor: `${GOLD}66`, color: GOLD }}>
               <Shield className="h-3 w-3" /> ZINATHA Verified
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold mb-0.5" style={{ color: DARK }}>Elliestrator Botanica</h1>
+            <h1 className="text-xl sm:text-2xl font-bold mb-0.5" style={{ color: DARK }}>VaShava</h1>
             <p className="text-xs italic mb-2" style={{ color: GOLD }}>"Where Ancient Wisdom Meets Modern Healing"</p>
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs mb-2" style={{ color: "#7a6e5e" }}>
               <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />Harare, Zimbabwe · worldwide</span>
@@ -237,7 +237,7 @@ export default function Home() {
                     </div>
                   ))}
                 </div>
-                <Button className="w-full h-8 text-sm text-white gap-2" style={{ background: "#2d7a6a" }} onClick={checkout}>
+                <Button className="w-full h-8 text-sm text-white gap-2" style={{ background: "#111111" }} onClick={checkout}>
                   <MessageCircle className="h-4 w-4" /> Checkout via WhatsApp
                 </Button>
               </div>
@@ -285,7 +285,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
-        <span style={{ color: GN }}>✦ Elliestrator Botanica</span> · Harare, Zimbabwe · Worldwide
+        <span style={{ color: GN }}>✦ VaShava</span> · Harare, Zimbabwe · Worldwide
       </footer>
     </div>
   );

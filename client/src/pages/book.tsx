@@ -12,11 +12,11 @@ import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upl
 import BookingCalendar from "@/components/calendar/BookingCalendar";
 
 const FORMAT_ICONS: Record<string, any> = { video: Video, audio: Mic, chat: MessageSquare, async: Send, in_person: MapPin };
-const BG   = "#fafaf7";
-const HERO = "#eef3ea";
-const BORDER = "#ddd8ce";
-const GN   = "#4a7040";
-const DARK = "#263320";
+const BG   = "#ffffff";
+const HERO = "#f7f6f2";
+const BORDER = "#e2e0da";
+const GN   = "#b8962e";
+const DARK = "#111111";
 const GOLD = "#8a6a2a";
 
 const DURATION_TIERS = [
@@ -138,14 +138,14 @@ export default function Book() {
   if (bookingDone) return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="max-w-sm w-full text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border" style={{ background: "#eef3ea", borderColor: `${GN}44` }}>
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border" style={{ background: "#f7f6f2", borderColor: `${GN}44` }}>
           <CheckCircle2 className="h-8 w-8" style={{ color: GN }} />
         </div>
         <h2 className="text-xl font-semibold mb-1" style={{ color: DARK }}>You're in the queue</h2>
         <p className="text-sm mb-1" style={{ color: "#9a8e7e" }}>{reading.name}</p>
         <p className="text-xs mb-5" style={{ color: "#b0a898" }}>Booking #{bookingId} · ${finalPrice} USD · Pending verification</p>
         <div className="rounded-lg border p-4 text-sm text-left space-y-2 mb-5 bg-white" style={{ borderColor: BORDER }}>
-          <p style={{ color: "#5a5040" }}>✓ Ellie will verify your payment within ~24 hours.</p>
+          <p style={{ color: "#5a5040" }}>✓ VaShava will verify your payment within ~24 hours.</p>
           <p style={{ color: "#5a5040" }}>✓ Your session link will be sent to WhatsApp: <strong>{whatsapp}</strong></p>
           <p className="text-xs" style={{ color: "#9a8e7e" }}>Nothing more to do — sit back and await your reading. 🌿</p>
         </div>
@@ -212,7 +212,7 @@ export default function Book() {
                         {f === "audio" && "Live audio call on WhatsApp — scheduled"}
                         {f === "chat" && "Real-time text on WhatsApp"}
                         {f === "async" && "Written/recorded reply on WhatsApp within ~24h"}
-                        {f === "in_person" && "Ellie's studio, Harare, Zimbabwe"}
+                        {f === "in_person" && "VaShava's studio, Harare, Zimbabwe"}
                       </p>
                     </div>
                     {sel && <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />}
@@ -276,7 +276,7 @@ export default function Book() {
         {step === 2 && (
           <div>
             <h2 className="font-medium mb-1" style={{ color: DARK }}>About you</h2>
-            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential — only seen by Ellie.</p>
+            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential — only seen by VaShava.</p>
             <div className="space-y-4 mb-5">
               <div>
                 <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Full name *</Label>
@@ -347,7 +347,7 @@ export default function Book() {
                 <div>
                   <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><CreditCard className="h-3.5 w-3.5" /> 2. Payment reference number</p>
                   <Input placeholder="e.g. transaction / confirmation number" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} className="bg-white font-mono" />
-                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Enter the reference shown in your payment confirmation so Ellie can match it.</p>
+                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Enter the reference shown in your payment confirmation so VaShava can match it.</p>
                 </div>
               )}
 
@@ -365,7 +365,7 @@ export default function Book() {
                   </p>
                 ) : (
                   <p className="text-xs mt-1" style={{ color: "#b0a898" }}>
-                    Must be an active WhatsApp number with country code — this is how Ellie reaches you.
+                    Must be an active WhatsApp number with country code — this is how VaShava reaches you.
                   </p>
                 )}
                 {waValid && (
@@ -388,7 +388,7 @@ export default function Book() {
                     {proofPreview && <img src={proofPreview} alt="Proof" className="max-h-28 rounded border object-contain" style={{ borderColor: BORDER }} />}
                   </div>
                 ) : (
-                  <button onClick={() => fileRef.current?.click()} className="w-full rounded-lg border-2 border-dashed p-5 text-center transition-colors hover:border-[#4a7040]" style={{ borderColor: BORDER }}>
+                  <button onClick={() => fileRef.current?.click()} className="w-full rounded-lg border-2 border-dashed p-5 text-center transition-colors hover:border-[#b8962e]" style={{ borderColor: BORDER }}>
                     <Upload className="h-5 w-5 mx-auto mb-1.5" style={{ color: "#c0b8a8" }} />
                     <p className="text-sm" style={{ color: "#9a8e7e" }}>Upload screenshot or PDF receipt</p>
                     <p className="text-xs mt-0.5" style={{ color: "#c0b8a8" }}>JPG, PNG or PDF · max 5 MB</p>
