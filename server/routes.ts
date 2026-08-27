@@ -21,14 +21,14 @@ function requireHealer(req: Request, res: Response, next: NextFunction) {
 }
 
 function generateSessionLink(format: string): string {
-  if (format === "in_person") return "Ellie's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
+  if (format === "in_person") return "VaShava's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
   // All remote sessions (video, audio, chat, async) happen over WhatsApp — no third-party links.
   return `https://wa.me/${ELLIE_WHATSAPP}`;
 }
 
 function buildWhatsAppVerifyUrl(apt: any): string {
   const date = apt.datetime ? new Date(apt.datetime).toLocaleString("en-ZW", { timeZone: "Africa/Harare" }) : "as arranged";
-  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). Ellie will message you here when it's time to begin. Thank you for booking with VaShava. 🌿`;
+  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). VaShava will message you here when it's time to begin. Thank you for booking with VaShava. 🌿`;
   return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -251,7 +251,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!user || user.password !== password || user.role !== "healer") {
         return res.status(401).json({ success: false, error: "Invalid email or password." });
       }
-      req.session.user = { email: user.email, role: user.role, name: "Ellie" };
+      req.session.user = { email: user.email, role: user.role, name: "VaShava" };
       res.json({ success: true, data: req.session.user });
     } catch (err) {
       res.status(500).json({ success: false, error: "Login failed" });

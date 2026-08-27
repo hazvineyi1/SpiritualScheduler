@@ -61,7 +61,7 @@ export default function Home() {
 
   const checkout = () => {
     const lines = cart.map(i => `• ${i.name} ×${i.qty} = $${(i.price * i.qty).toFixed(2)}`).join("\n");
-    window.open(`${ELLIE_WA}?text=${encodeURIComponent(`Hi Ellie! Order:\n\n${lines}\n\nTotal: $${cartTotal.toFixed(2)} USD 🌿`)}`, "_blank");
+    window.open(`${ELLIE_WA}?text=${encodeURIComponent(`Hi VaShava! Order:\n\n${lines}\n\nTotal: $${cartTotal.toFixed(2)} USD 🌿`)}`, "_blank");
   };
 
   const avgRating = (SEEDED_REVIEWS.reduce((s, r) => s + r.rating, 0) / SEEDED_REVIEWS.length).toFixed(1);
@@ -105,9 +105,9 @@ export default function Home() {
               <span className="text-sm font-semibold" style={{ color: DARK }}>4.9</span>
               <span className="text-xs" style={{ color: "#9a8e7e" }}>(161)</span>
             </div>
-            <a href={`${ELLIE_WA}?text=${encodeURIComponent("Hi Ellie! I have a question.")}`} target="_blank" rel="noreferrer">
+            <a href={`${ELLIE_WA}?text=${encodeURIComponent("Hi VaShava! I have a question.")}`} target="_blank" rel="noreferrer">
               <Button className="h-8 text-sm gap-1.5 text-white" style={{ background: GN }}>
-                <MessageCircle className="h-4 w-4" /> Message Ellie
+                <MessageCircle className="h-4 w-4" /> VaShava
               </Button>
             </a>
           </div>
