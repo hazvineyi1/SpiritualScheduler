@@ -122,21 +122,13 @@ export default function AfricaMap() {
   const [, navigate] = useLocation();
   const [hovered, setHovered] = useState<string | null>(null);
   const [tilt, setTilt] = useState(0);
-  const paused = useRef(false);
   const frame = useRef<number>();
-  const pauseOffset = useRef(0);
 
   useEffect(() => {
     const start = performance.now();
-    let lastElapsed = 0;
     const tick = (now: number) => {
-      if (!paused.current) {
-        lastElapsed = now - start - pauseOffset.current;
-        const phase = (lastElapsed % TILT_PERIOD_MS) / TILT_PERIOD_MS;
-        setTilt(TILT_DEGREES * Math.sin(phase * Math.PI * 2));
-      } else {
-        pauseOffset.current = now - start - lastElapsed;
-      }
+      const phase = ((now - start) % TILT_PERIOD_MS) / TILT_PERIOD_MS;
+      setTilt(TILT_DEGREES * Math.sin(phase * Math.PI * 2));
       frame.current = requestAnimationFrame(tick);
     };
     frame.current = requestAnimationFrame(tick);
@@ -169,8 +161,6 @@ export default function AfricaMap() {
       <div
         className="max-w-5xl mx-auto px-4 pb-4"
         style={{ perspective: 1600 }}
-        onMouseEnter={() => { paused.current = true; }}
-        onMouseLeave={() => { paused.current = false; setHovered(null); }}
       >
         <div style={{ transform: `rotateY(${tilt}deg)`, transformStyle: "preserve-3d" }}>
           <ComposableMap
