@@ -73,7 +73,7 @@ export interface IStorage {
   getHealerByEmail(email: string): Promise<Healer | undefined>;
   createHealer(data: InsertHealer): Promise<Healer>;
   listHealers(): Promise<Healer[]>;
-  updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled">>): Promise<Healer>;
+  updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled" | "country">>): Promise<Healer>;
   updateHealerCatalog(id: number, readings: Reading[], products: Product[]): Promise<Healer>;
 
   getAppointments(healerId: number): Promise<Appointment[]>;
@@ -117,6 +117,7 @@ export class MemStorage implements IStorage {
       tagline: "Where Ancient Wisdom Meets Modern Healing",
       location: "Harare, Zimbabwe · worldwide",
       whatsapp: "263771234567",
+      country: "zimbabwe",
       avatarUrl: "/images/vashava-avatar.jpg",
       headerImageUrl: "/images/eland.jpg",
       zinathaVerified: true,
@@ -166,6 +167,16 @@ export class MemStorage implements IStorage {
       this.healerIds = Math.max(this.healerIds, row.id + 1);
     }
 
+    // One-time backfill: healers created before the country field existed
+    // (namely VaShava, on databases from before this feature) have an empty
+    // country. Fix hers specifically so she appears under Zimbabwe on the map.
+    const vashava = this.healers.get(1);
+    if (vashava && vashava.slug === "vashava" && !vashava.country) {
+      const updated = { ...vashava, country: "zimbabwe" };
+      this.healers.set(1, updated);
+      await this.persistHealer(updated);
+    }
+
     const aptRows = await db.select().from(appointmentsTable);
     for (const row of aptRows) {
       this.appointments.set(row.id, row as Appointment);
@@ -210,6 +221,7 @@ export class MemStorage implements IStorage {
       tagline: data.tagline ?? "",
       location: data.location ?? "",
       whatsapp: data.whatsapp,
+      country: data.country.toLowerCase(),
       avatarUrl: "",
       headerImageUrl: DEFAULT_HEADER_IMAGES[this.healerIds % DEFAULT_HEADER_IMAGES.length],
       zinathaVerified: false,
@@ -242,7 +254,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.healers.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled">>): Promise<Healer> {
+  async updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled" | "country">>): Promise<Healer> {
     const healer = this.healers.get(id);
     if (!healer) throw new NotFoundError("Healer not found");
     const updated = { ...healer, ...updates };

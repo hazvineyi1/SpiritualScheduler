@@ -40,10 +40,12 @@ function publicHealer(h: Awaited<ReturnType<typeof storage.getHealer>>) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ---- Public directory & healer profiles ---------------------------------
-  app.get("/api/healers", async (_req, res) => {
+  app.get("/api/healers", async (req, res) => {
     try {
       const healers = await storage.listHealers();
-      res.json({ success: true, data: healers.map(publicHealer) });
+      const country = typeof req.query.country === "string" ? req.query.country.toLowerCase() : undefined;
+      const filtered = country ? healers.filter(h => h.country === country) : healers;
+      res.json({ success: true, data: filtered.map(publicHealer) });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to fetch hubs" });
     }
@@ -313,9 +315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/profile", requireHealer, async (req, res) => {
     try {
-      const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled } = req.body;
+      const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled, country } = req.body;
       if (!name?.trim()) return res.status(400).json({ success: false, error: "Name is required" });
-      const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled });
+      const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled, country });
       req.session.user!.name = updated.name;
       res.json({ success: true, data: publicHealer(updated) });
     } catch (err) {

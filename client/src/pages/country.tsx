@@ -1,7 +1,9 @@
+import { useState, useMemo } from "react";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { MapPin, Shield, ArrowRight } from "lucide-react";
+import { MapPin, Shield, ArrowRight, ChevronLeft } from "lucide-react";
+import { AFRICAN_COUNTRIES } from "@shared/countries";
 
 const BG      = "#f5efe0";
 const HERO    = "#e6d7b3";
@@ -19,58 +21,84 @@ interface PublicHealer {
   avatarUrl: string;
   headerImageUrl: string;
   zinathaVerified: boolean;
+  createdAt: string;
   readings: any[];
 }
 
-export default function Directory() {
+type SortOption = "name" | "newest" | "verified";
+
+export default function CountryHub() {
+  const { slug } = useParams<{ slug: string }>();
+  const [sort, setSort] = useState<SortOption>("verified");
+
+  const country = AFRICAN_COUNTRIES.find(c => c.slug === slug);
+
   const { data: healers = [], isLoading } = useQuery<PublicHealer[]>({
-    queryKey: ["/api/healers"],
+    queryKey: [`/api/healers?country=${slug}`],
   });
+
+  const sorted = useMemo(() => {
+    const list = [...healers];
+    if (sort === "name") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sort === "newest") list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    else if (sort === "verified") list.sort((a, b) => Number(b.zinathaVerified) - Number(a.zinathaVerified) || a.name.localeCompare(b.name));
+    return list;
+  }, [healers, sort]);
 
   return (
     <div style={{ background: BG, color: DARK, minHeight: "100vh" }}>
       {/* NAV */}
       <nav className="border-b" style={{ background: HERO, borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="font-semibold text-sm tracking-wide" style={{ color: DARK }}>✦ African Spiritual Hub</span>
+          <Link href="/"><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>✦ African Spiritual Hub</span></Link>
           <Link href="/signup">
             <Button size="sm" className="h-7 text-xs text-white" style={{ background: GN }}>List Your Practice</Button>
           </Link>
         </div>
       </nav>
 
-      {/* HERO with photo */}
-      <section className="relative overflow-hidden" style={{ height: "58vh", minHeight: 400, maxHeight: 560 }}>
-        <img
-          src="/images/directory-header.jpg"
-          alt="African Spiritual Hub"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ objectPosition: "62% 32%" }}
-        />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(28,23,18,0.05) 0%, rgba(28,23,18,0.35) 55%, rgba(20,17,12,0.88) 100%)" }} />
-        <div className="relative h-full flex flex-col items-center justify-end text-center px-4 pb-12">
-          <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: "#e3b98a" }}>Rooted in tradition</p>
-          <h1 className="text-3xl sm:text-5xl font-semibold mb-3 text-white">African Spiritual Hub</h1>
-          <p className="text-sm sm:text-base max-w-xl mx-auto text-white/85">
-            A home for verified African spiritual practitioners, each with their own independent hub for readings, cleansing, and consultation, booked directly and privately.
-          </p>
-        </div>
-      </section>
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        <Link href="/"><p className="text-xs flex items-center gap-1 mb-4 cursor-pointer" style={{ color: "#8a7d63" }}><ChevronLeft className="h-3.5 w-3.5" /> Back to map</p></Link>
 
-      {/* HEALER GRID */}
-      <div className="max-w-5xl mx-auto px-4 py-10">
-        <h2 className="text-sm font-medium mb-4" style={{ color: "#6b5f4a" }}>
-          Practitioner Hubs
-        </h2>
+        <h1 className="text-2xl sm:text-3xl font-semibold mb-1" style={{ color: DARK }}>
+          {country ? country.name : "Unknown country"}
+        </h1>
+        <p className="text-sm mb-6" style={{ color: "#6b5f4a" }}>
+          {isLoading ? "Loading hubs…" : `${healers.length} practitioner hub${healers.length !== 1 ? "s" : ""} here`}
+        </p>
 
-        {isLoading && <p className="text-sm" style={{ color: "#8a7d63" }}>Loading hubs…</p>}
+        {!isLoading && healers.length > 0 && (
+          <div className="flex items-center gap-2 mb-5">
+            <span className="text-xs" style={{ color: "#8a7d63" }}>Sort by</span>
+            {([
+              { value: "verified", label: "Verified first" },
+              { value: "name", label: "Name A–Z" },
+              { value: "newest", label: "Newest" },
+            ] as const).map(opt => (
+              <button key={opt.value} onClick={() => setSort(opt.value)}
+                className="text-xs px-3 py-1 rounded-full border transition-colors"
+                style={{
+                  borderColor: sort === opt.value ? GN : BORDER,
+                  background: sort === opt.value ? GN : "white",
+                  color: sort === opt.value ? "white" : "#6b5f4a",
+                }}>
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {!isLoading && healers.length === 0 && (
-          <p className="text-sm" style={{ color: "#8a7d63" }}>No hubs yet. Be the first to list your practice.</p>
+          <div className="rounded-xl border bg-white p-10 text-center" style={{ borderColor: BORDER }}>
+            <p className="text-sm mb-3" style={{ color: "#6b5f4a" }}>No hubs here yet.</p>
+            <Link href="/signup">
+              <Button size="sm" className="text-white" style={{ background: GN }}>Be the first to list your practice</Button>
+            </Link>
+          </div>
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {healers.map(h => (
+          {sorted.map(h => (
             <Link key={h.id} href={`/${h.slug}`}>
               <div className="rounded-xl border overflow-hidden bg-white cursor-pointer transition-transform hover:-translate-y-0.5 hover:shadow-lg" style={{ borderColor: BORDER }}>
                 <div className="h-32 overflow-hidden" style={{ background: HERO }}>

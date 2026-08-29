@@ -14,6 +14,7 @@ export const healers = pgTable("healers", {
   tagline: text("tagline").notNull().default(""),
   location: text("location").notNull().default(""),
   whatsapp: text("whatsapp").notNull().default(""),
+  country: text("country").notNull().default(""),
   avatarUrl: text("avatar_url").notNull().default(""),
   headerImageUrl: text("header_image_url").notNull().default(""),
   zinathaVerified: boolean("zinatha_verified").notNull().default(false),
@@ -53,6 +54,7 @@ export const insertHealerSchema = z.object({
   tagline: z.string().optional(),
   location: z.string().optional(),
   whatsapp: z.string().min(10, "Valid WhatsApp number required"),
+  country: z.string().min(1, "Please select the country you align with"),
 });
 
 export const insertAppointmentSchema = z.object({

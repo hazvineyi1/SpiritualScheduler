@@ -26,6 +26,7 @@ export async function ensureSchema() {
       tagline TEXT NOT NULL DEFAULT '',
       location TEXT NOT NULL DEFAULT '',
       whatsapp TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
       avatar_url TEXT NOT NULL DEFAULT '',
       header_image_url TEXT NOT NULL DEFAULT '',
       zinatha_verified BOOLEAN NOT NULL DEFAULT false,
@@ -56,5 +57,6 @@ export async function ensureSchema() {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_appointments_healer_id ON appointments (healer_id);
+    ALTER TABLE healers ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT '';
   `);
 }

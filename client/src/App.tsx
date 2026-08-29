@@ -2,7 +2,8 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import Directory from "@/pages/directory";
+import AfricaMap from "@/pages/africa-map";
+import CountryHub from "@/pages/country";
 import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import Book from "@/pages/book";
@@ -12,8 +13,9 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Directory} />
+      <Route path="/" component={AfricaMap} />
       <Route path="/signup" component={Signup} />
+      <Route path="/country/:slug" component={CountryHub} />
       <Route path="/:slug/dashboard" component={Dashboard} />
       <Route path="/:slug/book/:readingId" component={Book} />
       <Route path="/:slug" component={Home} />

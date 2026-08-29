@@ -3,8 +3,10 @@ import { useLocation, Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronLeft } from "lucide-react";
+import { AFRICAN_COUNTRIES } from "@shared/countries";
 
 const BG     = "#f5efe0";
 const HERO   = "#e6d7b3";
@@ -14,7 +16,7 @@ const DARK   = "#1c1712";
 
 export default function Signup() {
   const [, navigate] = useLocation();
-  const [form, setForm] = useState({ slug: "", name: "", email: "", password: "", whatsapp: "", tagline: "", location: "" });
+  const [form, setForm] = useState({ slug: "", name: "", email: "", password: "", whatsapp: "", tagline: "", location: "", country: "" });
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -26,6 +28,7 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (!form.country) { setError("Please select the country you align with."); return; }
     setSubmitting(true);
     try {
       const res = await apiRequest("POST", "/api/healers", form);
@@ -73,6 +76,20 @@ export default function Signup() {
           <div>
             <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>WhatsApp number</Label>
             <Input value={form.whatsapp} onChange={set("whatsapp")} placeholder="263771234567" required />
+          </div>
+          <div>
+            <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Country you align with</Label>
+            <Select value={form.country} onValueChange={v => setForm(f => ({ ...f, country: v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {AFRICAN_COUNTRIES.map(c => (
+                  <SelectItem key={c.slug} value={c.slug}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] mt-1" style={{ color: "#b0a898" }}>This is how clients find you on the map, either where you're based or where your practice originates from.</p>
           </div>
           <div>
             <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Tagline (optional)</Label>

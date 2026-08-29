@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Save, Plus, Trash2, UserCog, ShoppingBag, Loader2 } from "lucide-react";
 import type { Reading, Product, SessionFormat } from "@shared/types";
+import { AFRICAN_COUNTRIES } from "@shared/countries";
 
 const HERO   = "#e6d7b3";
 const BORDER = "#c9b896";
@@ -31,6 +33,7 @@ interface HealerProfile {
   avatarUrl: string;
   headerImageUrl: string;
   shopEnabled: boolean;
+  country: string;
   readings: Reading[];
   products: Product[];
 }
@@ -43,7 +46,7 @@ export default function HubSettings({ slug }: { slug: string }) {
     queryKey: [`/api/healers/${slug}`],
   });
 
-  const [profile, setProfile] = useState({ name: "", tagline: "", location: "", whatsapp: "", avatarUrl: "", headerImageUrl: "", shopEnabled: true });
+  const [profile, setProfile] = useState({ name: "", tagline: "", location: "", whatsapp: "", avatarUrl: "", headerImageUrl: "", shopEnabled: true, country: "" });
   const [readings, setReadings] = useState<Reading[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -55,7 +58,7 @@ export default function HubSettings({ slug }: { slug: string }) {
     setProfile({
       name: healer.name || "", tagline: healer.tagline || "", location: healer.location || "",
       whatsapp: healer.whatsapp || "", avatarUrl: healer.avatarUrl || "", headerImageUrl: healer.headerImageUrl || "",
-      shopEnabled: healer.shopEnabled ?? true,
+      shopEnabled: healer.shopEnabled ?? true, country: healer.country || "",
     });
     setReadings(healer.readings || []);
     setProducts(healer.products || []);
@@ -151,6 +154,20 @@ export default function HubSettings({ slug }: { slug: string }) {
           <div>
             <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Location</Label>
             <Input value={profile.location} onChange={e => setProfile(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Harare, Zimbabwe · worldwide" />
+          </div>
+          <div>
+            <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Country you align with</Label>
+            <Select value={profile.country} onValueChange={v => setProfile(p => ({ ...p, country: v }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {AFRICAN_COUNTRIES.map(c => (
+                  <SelectItem key={c.slug} value={c.slug}>{c.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] mt-1" style={{ color: "#b0a898" }}>This is how clients find your hub on the map.</p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
             <div>
