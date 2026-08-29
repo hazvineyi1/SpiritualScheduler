@@ -167,7 +167,10 @@ export default function Book() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-semibold text-sm" style={{ color: DARK }}>{reading.name}</h1>
-              <p className="text-xs" style={{ color: "#9a8e7e" }}>{CATEGORY_LABELS[reading.category]} · ${reading.price} base</p>
+              <p className="text-xs" style={{ color: "#9a8e7e" }}>
+                {CATEGORY_LABELS[reading.category]} · ${reading.price} base
+                {reading.originalPrice && <span className="line-through ml-1">${reading.originalPrice}</span>}
+              </p>
             </div>
             <div className="flex gap-1.5 items-center">
               {STEPS.map((s, i) => (

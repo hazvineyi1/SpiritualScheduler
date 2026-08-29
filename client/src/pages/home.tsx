@@ -8,12 +8,8 @@ import { MapPin, Clock, Shield, MessageCircle, Search, ChevronDown, ChevronRight
 import ChatWidget from "@/components/ChatWidget";
 
 const CAT_ICON: Record<string, string> = {
-  love_relationships: "💕",
-  ancestors_spirit: "🌿",
-  healing_wellbeing: "✨",
-  spells_protection: "🔮",
-  guidance_future: "🌟",
-  live_in_person: "🎴",
+  guidance_consultation: "🔮",
+  ancestral_cleansing: "🌿",
 };
 
 const ALL_CATS = Object.keys(CATEGORY_LABELS) as ReadingCategory[];
@@ -28,7 +24,7 @@ const GOLD   = "#8a6a2a";
 
 export default function Home() {
   const [search, setSearch] = useState("");
-  const [openCats, setOpenCats] = useState<Set<ReadingCategory>>(new Set<ReadingCategory>(["love_relationships"]));
+  const [openCats, setOpenCats] = useState<Set<ReadingCategory>>(new Set<ReadingCategory>(["guidance_consultation"]));
 
   const toggleCat = (c: ReadingCategory) =>
     setOpenCats(prev => { const s = new Set(prev); s.has(c) ? s.delete(c) : s.add(c); return s; });
@@ -150,7 +146,12 @@ export default function Home() {
                       {r.isAdult && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded flex-shrink-0">18+</span>}
                     </div>
                     <div className="flex items-center gap-2.5 flex-shrink-0">
-                      <span className="text-sm font-semibold" style={{ color: GN }}>${r.price}</span>
+                      <span className="flex items-baseline gap-1">
+                        <span className="text-sm font-semibold" style={{ color: GN }}>${r.price}</span>
+                        {r.originalPrice && (
+                          <span className="text-[11px] line-through" style={{ color: "#c0b8a8" }}>${r.originalPrice}</span>
+                        )}
+                      </span>
                       <Link href={`/book/${r.id}`}>
                         <Button size="sm" className="h-7 text-xs px-3 text-white" style={{ background: GN }}>Book</Button>
                       </Link>
@@ -161,7 +162,7 @@ export default function Home() {
             );
           })}
         </div>
-        <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>41 readings across 6 traditions · tap a category to browse</p>
+        <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>{READINGS.length} readings across {ALL_CATS.length} categories · tap a category to browse</p>
       </div>
 
       <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
