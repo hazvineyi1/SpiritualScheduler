@@ -232,7 +232,7 @@ export default function Home() {
               })}
             </div>
             {readings.length > 0 && (
-              <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>{readings.length} readings across {allCats.length} categories · tap a category to browse</p>
+              <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>{readings.length} reading{readings.length !== 1 ? "s" : ""} across {allCats.length} categor{allCats.length !== 1 ? "ies" : "y"} · tap a category to browse</p>
             )}
           </>
         )}
