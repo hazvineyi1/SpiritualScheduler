@@ -1,15 +1,31 @@
-import { pgTable, text, serial, integer, json } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, boolean } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-export const users = pgTable("users", {
+// Each row is one independent healer hub. Readings, products, and
+// availability are stored as JSON on the healer's own row — every healer's
+// catalog and schedule is entirely self-contained and never shared or
+// queried across healers.
+export const healers = pgTable("healers", {
   id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
-  role: text("role").notNull().default("healer"),
+  name: text("name").notNull(),
+  tagline: text("tagline").notNull().default(""),
+  location: text("location").notNull().default(""),
+  whatsapp: text("whatsapp").notNull().default(""),
+  avatarUrl: text("avatar_url").notNull().default(""),
+  headerImageUrl: text("header_image_url").notNull().default(""),
+  zinathaVerified: boolean("zinatha_verified").notNull().default(false),
+  readings: json("readings").$type<any[]>().notNull().default([]),
+  products: json("products").$type<any[]>().notNull().default([]),
+  availability: json("availability").$type<AvailabilityConfig>(),
+  createdAt: text("created_at").notNull(),
 });
 
 export const appointments = pgTable("appointments", {
   id: serial("id").primaryKey(),
+  healerId: integer("healer_id").notNull(),
   readingId: integer("reading_id"),
   readingName: text("reading_name").notNull(),
   category: text("category").notNull(),
@@ -28,6 +44,16 @@ export const appointments = pgTable("appointments", {
   createdAt: text("created_at").notNull(),
 });
 
+export const insertHealerSchema = z.object({
+  slug: z.string().min(2).max(40).regex(/^[a-z0-9-]+$/, "Lowercase letters, numbers, and hyphens only"),
+  email: z.string().email("Valid email required"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  name: z.string().min(1, "Name required"),
+  tagline: z.string().optional(),
+  location: z.string().optional(),
+  whatsapp: z.string().min(10, "Valid WhatsApp number required"),
+});
+
 export const insertAppointmentSchema = z.object({
   readingId: z.number().optional(),
   readingName: z.string().min(1, "Reading name required"),
@@ -44,8 +70,8 @@ export const insertAppointmentSchema = z.object({
   intakeAnswers: z.record(z.string()).optional(),
 });
 
-export type User = typeof users.$inferSelect;
-export type InsertUser = { email: string; password: string; role?: string };
+export type Healer = typeof healers.$inferSelect;
+export type InsertHealer = z.infer<typeof insertHealerSchema>;
 export type Appointment = typeof appointments.$inferSelect;
 export type InsertAppointment = z.infer<typeof insertAppointmentSchema>;
 

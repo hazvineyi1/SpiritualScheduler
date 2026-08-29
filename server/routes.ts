@@ -1,62 +1,134 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage, SlotUnavailableError } from "./storage";
-import { insertAppointmentSchema, updateAvailabilitySchema } from "@shared/schema";
-import { READINGS, PRODUCTS, SEEDED_REVIEWS } from "@shared/types";
+import { storage, SlotUnavailableError, NotFoundError } from "./storage";
+import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema } from "@shared/schema";
 import { ZodError } from "zod";
 import type { Request, Response, NextFunction } from "express";
 
 declare module "express-session" {
   interface SessionData {
-    user?: { email: string; role: string; name: string };
+    // healerId is the sole source of truth for every authenticated action —
+    // a signed-in healer can only ever read or modify their own hub's data.
+    user?: { healerId: number; slug: string; email: string; name: string };
   }
 }
 
-const ELLIE_WHATSAPP = "263771234567";
-
-// Only the signed-in healer may manage the schedule and appointments.
+// Only the signed-in healer may manage their own schedule and appointments.
 function requireHealer(req: Request, res: Response, next: NextFunction) {
-  if (req.session?.user?.role === "healer") return next();
-  return res.status(401).json({ success: false, error: "Please sign in as the healer to do that." });
+  if (req.session?.user?.healerId) return next();
+  return res.status(401).json({ success: false, error: "Please sign in to do that." });
 }
 
-function generateSessionLink(format: string): string {
-  if (format === "in_person") return "VaShava's Studio, 14 Borrowdale Rd, Harare — address confirmed via WhatsApp.";
-  // All remote sessions (video, audio, chat, async) happen over WhatsApp — no third-party links.
-  return `https://wa.me/${ELLIE_WHATSAPP}`;
+function generateSessionLink(healerName: string, healerWhatsapp: string, format: string): string {
+  if (format === "in_person") return `${healerName}'s address will be confirmed via WhatsApp.`;
+  return `https://wa.me/${healerWhatsapp}`;
 }
 
-function buildWhatsAppVerifyUrl(apt: any): string {
+function buildWhatsAppVerifyUrl(apt: any, healerName: string): string {
   const date = apt.datetime ? new Date(apt.datetime).toLocaleString("en-ZW", { timeZone: "Africa/Harare" }) : "as arranged";
-  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). VaShava will message you here when it's time to begin. Thank you for booking with VaShava. 🌿`;
+  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). ${healerName} will message you here when it's time to begin. Thank you for booking. 🌿`;
   return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 
+// Strips credentials and internal fields before a healer record is ever
+// sent to the public (directory listing or a hub's own storefront).
+function publicHealer(h: Awaited<ReturnType<typeof storage.getHealer>>) {
+  if (!h) return h;
+  const { password, email, ...pub } = h;
+  return pub;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Static data routes
-  app.get("/api/readings", (_req, res) => {
-    res.json({ success: true, data: READINGS });
-  });
-
-  app.get("/api/readings/:id", (req, res) => {
-    const id = parseInt(req.params.id);
-    const reading = READINGS.find(r => r.id === id);
-    if (!reading) return res.status(404).json({ success: false, error: "Reading not found" });
-    res.json({ success: true, data: reading });
-  });
-
-  app.get("/api/products", (_req, res) => {
-    res.json({ success: true, data: PRODUCTS });
-  });
-
-  app.get("/api/reviews", (_req, res) => {
-    res.json({ success: true, data: SEEDED_REVIEWS });
-  });
-
-  // Appointments
-  app.get("/api/appointments", requireHealer, async (_req, res) => {
+  // ---- Public directory & healer profiles ---------------------------------
+  app.get("/api/healers", async (_req, res) => {
     try {
-      const appointments = await storage.getAllAppointments();
+      const healers = await storage.listHealers();
+      res.json({ success: true, data: healers.map(publicHealer) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch hubs" });
+    }
+  });
+
+  app.get("/api/healers/:slug", async (req, res) => {
+    try {
+      const healer = await storage.getHealerBySlug(req.params.slug);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      res.json({ success: true, data: publicHealer(healer) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch hub" });
+    }
+  });
+
+  app.post("/api/healers", async (req, res) => {
+    try {
+      const data = insertHealerSchema.parse(req.body);
+      const existingSlug = await storage.getHealerBySlug(data.slug);
+      if (existingSlug) return res.status(409).json({ success: false, error: "That hub name is already taken." });
+      const existingEmail = await storage.getHealerByEmail(data.email.toLowerCase().trim());
+      if (existingEmail) return res.status(409).json({ success: false, error: "An account with that email already exists." });
+      const healer = await storage.createHealer({ ...data, email: data.email.toLowerCase().trim() });
+      req.session.user = { healerId: healer.id, slug: healer.slug, email: healer.email, name: healer.name };
+      res.json({ success: true, data: publicHealer(healer) });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
+      }
+      res.status(500).json({ success: false, error: "Failed to create hub" });
+    }
+  });
+
+  // ---- Public booking (scoped to one healer via slug) ---------------------
+  app.get("/api/healers/:slug/availability", async (req, res) => {
+    try {
+      const healer = await storage.getHealerBySlug(req.params.slug);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      const config = await storage.getAvailability(healer.id);
+      res.json({ success: true, data: config });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch availability" });
+    }
+  });
+
+  app.get("/api/healers/:slug/slots", async (req, res) => {
+    try {
+      const healer = await storage.getHealerBySlug(req.params.slug);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      const date = String(req.query.date || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, error: "Provide a date as YYYY-MM-DD" });
+      }
+      const slots = await storage.getDaySlots(healer.id, date);
+      res.json({ success: true, data: { date, slots } });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch slots" });
+    }
+  });
+
+  app.post("/api/healers/:slug/appointments", async (req, res) => {
+    try {
+      const healer = await storage.getHealerBySlug(req.params.slug);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      const data = insertAppointmentSchema.parse(req.body);
+      const apt = await storage.createAppointment(healer.id, data);
+      res.json({ success: true, data: apt });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: "Validation error", details: err.errors });
+      }
+      if (err instanceof SlotUnavailableError || err instanceof NotFoundError) {
+        return res.status(409).json({ success: false, error: err.message });
+      }
+      console.error("Create appointment error:", err);
+      res.status(500).json({ success: false, error: "Failed to create appointment" });
+    }
+  });
+
+  // ---- Authenticated dashboard (always scoped to req.session.user.healerId,
+  // never to a slug or id supplied by the request — a healer can only ever
+  // act as themselves) --------------------------------------------------
+  app.get("/api/appointments", requireHealer, async (req, res) => {
+    try {
+      const appointments = await storage.getAppointments(req.session.user!.healerId);
       res.json({ success: true, data: appointments });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to fetch appointments" });
@@ -67,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const apt = await storage.getAppointment(id);
+      const apt = await storage.getAppointment(req.session.user!.healerId, id);
       if (!apt) return res.status(404).json({ success: false, error: "Not found" });
       res.json({ success: true, data: apt });
     } catch (err) {
@@ -75,37 +147,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/appointments", async (req, res) => {
+  app.get("/api/availability", requireHealer, async (req, res) => {
     try {
-      const data = insertAppointmentSchema.parse(req.body);
-      const apt = await storage.createAppointment(data);
-      res.json({ success: true, data: apt });
-    } catch (err) {
-      if (err instanceof ZodError) {
-        return res.status(400).json({ success: false, error: "Validation error", details: err.errors });
-      }
-      if (err instanceof SlotUnavailableError) {
-        return res.status(409).json({ success: false, error: err.message });
-      }
-      console.error("Create appointment error:", err);
-      res.status(500).json({ success: false, error: "Failed to create appointment" });
-    }
-  });
-
-  // ---- Availability / scheduling ------------------------------------------
-  app.get("/api/availability", async (_req, res) => {
-    try {
-      const config = await storage.getAvailability();
+      const config = await storage.getAvailability(req.session.user!.healerId);
       res.json({ success: true, data: config });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to fetch availability" });
     }
   });
 
+  app.get("/api/availability/slots", requireHealer, async (req, res) => {
+    try {
+      const date = String(req.query.date || "");
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, error: "Provide a date as YYYY-MM-DD" });
+      }
+      const slots = await storage.getDaySlots(req.session.user!.healerId, date);
+      res.json({ success: true, data: { date, slots } });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch slots" });
+    }
+  });
+
   app.put("/api/availability", requireHealer, async (req, res) => {
     try {
       const update = updateAvailabilitySchema.parse(req.body);
-      const config = await storage.updateAvailability(update);
+      const config = await storage.updateAvailability(req.session.user!.healerId, update);
       res.json({ success: true, data: config });
     } catch (err) {
       if (err instanceof ZodError) {
@@ -118,24 +185,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/availability/slots", async (req, res) => {
-    try {
-      const date = String(req.query.date || "");
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return res.status(400).json({ success: false, error: "Provide a date as YYYY-MM-DD" });
-      }
-      const slots = await storage.getDaySlots(date);
-      res.json({ success: true, data: { date, slots } });
-    } catch (err) {
-      res.status(500).json({ success: false, error: "Failed to fetch slots" });
-    }
-  });
-
   app.post("/api/availability/block", requireHealer, async (req, res) => {
     try {
       const { datetime } = req.body;
       if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
-      const config = await storage.blockSlot(datetime);
+      const config = await storage.blockSlot(req.session.user!.healerId, datetime);
       res.json({ success: true, data: config });
     } catch (err) {
       if (err instanceof SlotUnavailableError) {
@@ -149,7 +203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { datetime } = req.body;
       if (!datetime) return res.status(400).json({ success: false, error: "datetime required" });
-      const config = await storage.unblockSlot(datetime);
+      const config = await storage.unblockSlot(req.session.user!.healerId, datetime);
       res.json({ success: true, data: config });
     } catch (err) {
       if (err instanceof SlotUnavailableError) {
@@ -166,9 +220,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { status } = req.body;
       const allowed = ["pending_verification", "confirmed", "declined", "completed", "cancelled"];
       if (!allowed.includes(status)) return res.status(400).json({ success: false, error: "Invalid status" });
-      const apt = await storage.updateAppointmentStatus(id, status);
+      const apt = await storage.updateAppointmentStatus(req.session.user!.healerId, id, status);
       res.json({ success: true, data: apt });
     } catch (err) {
+      if (err instanceof NotFoundError) return res.status(404).json({ success: false, error: err.message });
       res.status(500).json({ success: false, error: "Failed to update status" });
     }
   });
@@ -177,11 +232,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const apt = await storage.getAppointment(id);
+      const healer = await storage.getHealer(req.session.user!.healerId);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      const apt = await storage.getAppointment(healer.id, id);
       if (!apt) return res.status(404).json({ success: false, error: "Not found" });
-      const sessionLink = generateSessionLink(apt.format);
-      const updated = await storage.updateAppointmentStatus(id, "confirmed", sessionLink);
-      const whatsappUrl = buildWhatsAppVerifyUrl(updated);
+      const sessionLink = generateSessionLink(healer.name, healer.whatsapp, apt.format);
+      const updated = await storage.updateAppointmentStatus(healer.id, id, "confirmed", sessionLink);
+      const whatsappUrl = buildWhatsAppVerifyUrl(updated, healer.name);
       res.json({ success: true, data: updated, whatsappUrl });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to verify appointment" });
@@ -192,12 +249,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const apt = await storage.getAppointment(id);
+      const apt = await storage.getAppointment(req.session.user!.healerId, id);
       if (!apt) return res.status(404).json({ success: false, error: "Not found" });
       if (apt.status !== "confirmed") {
         return res.status(409).json({ success: false, error: "Only a confirmed session can be started" });
       }
-      const updated = await storage.updateAppointmentStatus(id, "in_progress");
+      const updated = await storage.updateAppointmentStatus(req.session.user!.healerId, id, "in_progress");
       res.json({ success: true, data: updated });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to start session" });
@@ -208,12 +265,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const apt = await storage.getAppointment(id);
+      const apt = await storage.getAppointment(req.session.user!.healerId, id);
       if (!apt) return res.status(404).json({ success: false, error: "Not found" });
       if (apt.status !== "in_progress" && apt.status !== "confirmed") {
         return res.status(409).json({ success: false, error: "Only an active session can be completed" });
       }
-      const updated = await storage.updateAppointmentStatus(id, "completed");
+      const updated = await storage.updateAppointmentStatus(req.session.user!.healerId, id, "completed");
       res.json({ success: true, data: updated });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to complete session" });
@@ -224,9 +281,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const updated = await storage.updateAppointmentStatus(id, "declined");
+      const updated = await storage.updateAppointmentStatus(req.session.user!.healerId, id, "declined");
       res.json({ success: true, data: updated });
     } catch (err) {
+      if (err instanceof NotFoundError) return res.status(404).json({ success: false, error: err.message });
       res.status(500).json({ success: false, error: "Failed to decline appointment" });
     }
   });
@@ -235,34 +293,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) return res.status(400).json({ success: false, error: "Invalid ID" });
-      const updated = await storage.cancelAppointment(id);
+      const updated = await storage.cancelAppointment(req.session.user!.healerId, id);
       res.json({ success: true, data: updated });
     } catch (err) {
+      if (err instanceof NotFoundError) return res.status(404).json({ success: false, error: err.message });
       res.status(500).json({ success: false, error: "Failed to cancel appointment" });
     }
   });
 
-  // Wipes all appointment data. Healer-only — used by the "Reset Data" control
-  // in the dashboard to clear test/demo bookings.
+  // Wipes only the signed-in healer's own appointment data.
   app.post("/api/appointments/reset-all", requireHealer, async (req, res) => {
     try {
-      storage.resetAppointments();
+      storage.resetAppointments(req.session.user!.healerId);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to reset data" });
     }
   });
 
-  // Auth
+  app.put("/api/profile", requireHealer, async (req, res) => {
+    try {
+      const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl } = req.body;
+      const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl });
+      req.session.user!.name = updated.name;
+      res.json({ success: true, data: publicHealer(updated) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to update profile" });
+    }
+  });
+
+  app.put("/api/catalog", requireHealer, async (req, res) => {
+    try {
+      const { readings, products } = req.body;
+      if (!Array.isArray(readings) || !Array.isArray(products)) {
+        return res.status(400).json({ success: false, error: "readings and products must be arrays" });
+      }
+      const updated = await storage.updateHealerCatalog(req.session.user!.healerId, readings, products);
+      res.json({ success: true, data: publicHealer(updated) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to update catalog" });
+    }
+  });
+
+  // ---- Auth -----------------------------------------------------------
   app.post("/api/auth/login", async (req, res) => {
     try {
       const { email, password } = req.body;
       if (!email || !password) return res.status(400).json({ success: false, error: "Email and password required" });
-      const user = await storage.getUserByEmail(String(email).toLowerCase().trim());
-      if (!user || user.password !== password || user.role !== "healer") {
+      const healer = await storage.getHealerByEmail(String(email).toLowerCase().trim());
+      if (!healer || healer.password !== password) {
         return res.status(401).json({ success: false, error: "Invalid email or password." });
       }
-      req.session.user = { email: user.email, role: user.role, name: "VaShava" };
+      req.session.user = { healerId: healer.id, slug: healer.slug, email: healer.email, name: healer.name };
       res.json({ success: true, data: req.session.user });
     } catch (err) {
       res.status(500).json({ success: false, error: "Login failed" });

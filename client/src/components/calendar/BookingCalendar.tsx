@@ -12,6 +12,7 @@ const GN     = "#355e4a";
 const DARK   = "#1c1712";
 
 interface BookingCalendarProps {
+  slug: string;
   selected: string | null;
   onSelect: (iso: string | null) => void;
 }
@@ -23,20 +24,20 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-export default function BookingCalendar({ selected, onSelect }: BookingCalendarProps) {
+export default function BookingCalendar({ slug, selected, onSelect }: BookingCalendarProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   const { data: config } = useQuery<AvailabilityConfig>({
-    queryKey: ["/api/availability"],
+    queryKey: [`/api/healers/${slug}/availability`],
   });
 
   const dateStr = selectedDate ? toDateStr(selectedDate) : null;
   const { data: slotData, isLoading: slotsLoading } = useQuery<{ date: string; slots: DaySlot[] }>({
-    queryKey: ["/api/availability/slots", dateStr],
+    queryKey: [`/api/healers/${slug}/slots`, dateStr],
     enabled: !!dateStr,
     refetchInterval: 30000,
     queryFn: async () => {
-      const res = await fetch(`/api/availability/slots?date=${dateStr}`, { credentials: "include" });
+      const res = await fetch(`/api/healers/${slug}/slots?date=${dateStr}`, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to load slots");
       const json = await res.json();
       return json.data;
@@ -99,7 +100,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
               </div>
             ) : !dayIsOpen ? (
               <div className="py-8 text-center">
-                <p className="text-sm" style={{ color: "#9a8e7e" }}>VaShava isn't available on this day.</p>
+                <p className="text-sm" style={{ color: "#9a8e7e" }}>Not available on this day.</p>
                 <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Please choose another date.</p>
               </div>
             ) : bookable.length === 0 ? (
@@ -135,7 +136,7 @@ export default function BookingCalendar({ selected, onSelect }: BookingCalendarP
                         key={slot.datetime}
                         className="rounded-lg border py-2 text-sm flex items-center justify-center gap-1.5 cursor-not-allowed"
                         style={{ borderColor: "#ece8df", background: "#f7f5f0", color: "#bdb6a8" }}
-                        title={slot.status === "booked" ? "Already booked" : "Closed by VaShava"}
+                        title={slot.status === "booked" ? "Already booked" : "Closed"}
                       >
                         <Lock className="h-3 w-3" />
                         <span className="line-through">{slot.label}</span>

@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useParams, useLocation } from "wouter";
-import { READINGS, FORMAT_LABELS, CATEGORY_LABELS } from "@shared/types";
-import type { SessionFormat } from "@shared/types";
+import { useQuery } from "@tanstack/react-query";
+import type { SessionFormat, Reading } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upl
 import BookingCalendar from "@/components/calendar/BookingCalendar";
 import ChatWidget from "@/components/ChatWidget";
 
+const FORMAT_LABELS: Record<string, string> = { video: "Video", audio: "Audio", chat: "Live Chat", async: "Async", in_person: "In-Person" };
 const FORMAT_ICONS: Record<string, any> = { video: Video, audio: Mic, chat: MessageSquare, async: Send, in_person: MapPin };
 const BG   = "#faf7f2";
 const HERO = "#f0ead9";
@@ -19,6 +20,10 @@ const BORDER = "#ddd2bc";
 const GN   = "#355e4a";
 const DARK = "#1c1712";
 const GOLD = "#a2532e";
+
+interface PublicHealer {
+  id: number; slug: string; name: string; whatsapp: string; readings: Reading[];
+}
 
 const DURATION_TIERS = [
   { label: "15 min", value: 15, multiplier: 0.6 },
@@ -32,20 +37,28 @@ const QUESTION_TIERS = [
   { label: "5 Questions", value: 5, multiplier: 1.5 },
   { label: "Unlimited", value: 99, multiplier: 2.5 },
 ];
-const PAYMENT_METHODS = [
-  { value: "ecocash", label: "EcoCash USD", desc: "Zimbabwe EcoCash (USD)", instructions: "Send USD to Davidzo Ellen Mubwandarikwa on +263783402890. Use your booking reference as the remark." },
-  { value: "innbucks", label: "InnBucks", desc: "InnBucks mobile wallet", instructions: "Send to Davidzo Ellen Mubwandarikwa on +263783402890. Include your booking reference." },
-  { value: "world_remit", label: "WorldRemit", desc: "International mobile money", instructions: "Send via the mobile money option (NOT cash pick-up) to Davidzo Ellen Mubwandarikwa on +263783402890. Include your reference in the note." },
-  { value: "remitly", label: "Remitly", desc: "International money transfer", instructions: "Send via the mobile money option (NOT cash pick-up) to Davidzo Ellen Mubwandarikwa on +263783402890. Include your reference in the note." },
+const PAYMENT_METHOD_META = [
+  { value: "ecocash", label: "EcoCash USD", desc: "Zimbabwe EcoCash (USD)" },
+  { value: "innbucks", label: "InnBucks", desc: "InnBucks mobile wallet" },
+  { value: "world_remit", label: "WorldRemit", desc: "International mobile money" },
+  { value: "remitly", label: "Remitly", desc: "International money transfer" },
 ] as const;
 
 export default function Book() {
-  const { readingId } = useParams<{ readingId: string }>();
+  const { slug, readingId } = useParams<{ slug: string; readingId: string }>();
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const reading = READINGS.find(r => r.id === parseInt(readingId ?? ""));
+  const { data: healer, isLoading } = useQuery<PublicHealer>({
+    queryKey: [`/api/healers/${slug}`],
+  });
+
+  const reading = healer?.readings.find(r => r.id === parseInt(readingId ?? ""));
+  const PAYMENT_METHODS = PAYMENT_METHOD_META.map(m => ({
+    ...m,
+    instructions: healer ? `Send to ${healer.name} on +${healer.whatsapp}. Include your booking reference as the remark.` : "",
+  }));
   const [step, setStep] = useState(0);
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [format, setFormat] = useState<SessionFormat | null>(null);
@@ -53,7 +66,7 @@ export default function Book() {
   const [duration, setDuration] = useState(30);
   const [questionCount, setQuestionCount] = useState(3);
   const [intake, setIntake] = useState<Record<string, string>>({ clientName: "", dob: "", mainQuestion: "" });
-  const [paymentMethod, setPaymentMethod] = useState<typeof PAYMENT_METHODS[number]["value"] | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<typeof PAYMENT_METHOD_META[number]["value"] | null>(null);
   const [paymentReference, setPaymentReference] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [proofFile, setProofFile] = useState<File | null>(null);
@@ -62,11 +75,15 @@ export default function Book() {
   const [bookingDone, setBookingDone] = useState(false);
   const [bookingId, setBookingId] = useState<number | null>(null);
 
-  if (!reading) return (
+  if (isLoading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: BG, color: "#9a8e7e" }}>Loading…</div>
+  );
+
+  if (!healer || !reading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: BG }}>
       <div className="text-center">
         <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Reading not found.</p>
-        <Button onClick={() => navigate("/")} style={{ background: GN, color: "white" }}>Back to Home</Button>
+        <Button onClick={() => navigate(`/${slug}`)} style={{ background: GN, color: "white" }}>Back to Hub</Button>
       </div>
     </div>
   );
@@ -104,7 +121,7 @@ export default function Book() {
     if (!canConfirm || !format) return;
     setIsSubmitting(true);
     try {
-      const res = await fetch("/api/appointments", {
+      const res = await fetch(`/api/healers/${slug}/appointments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -121,7 +138,7 @@ export default function Book() {
       const json = await res.json().catch(() => ({ success: false, error: "Booking failed" }));
       if (res.status === 409) {
         // Slot was taken or closed between selection and confirmation.
-        queryClient.invalidateQueries({ queryKey: ["/api/availability/slots"] });
+        queryClient.invalidateQueries({ queryKey: [`/api/healers/${slug}/slots`] });
         setSelectedSlot(null);
         setStep(1);
         toast({ title: "That time is no longer available", description: json.error || "Please choose another open slot.", variant: "destructive" });
@@ -146,11 +163,11 @@ export default function Book() {
         <p className="text-sm mb-1" style={{ color: "#9a8e7e" }}>{reading.name}</p>
         <p className="text-xs mb-5" style={{ color: "#b0a898" }}>Booking #{bookingId} · ${finalPrice} USD · Pending verification</p>
         <div className="rounded-lg border p-4 text-sm text-left space-y-2 mb-5 bg-white" style={{ borderColor: BORDER }}>
-          <p style={{ color: "#5a5040" }}>✓ VaShava will verify your payment within ~24 hours.</p>
+          <p style={{ color: "#5a5040" }}>✓ {healer.name} will verify your payment within ~24 hours.</p>
           <p style={{ color: "#5a5040" }}>✓ Your session link will be sent to WhatsApp: <strong>{whatsapp}</strong></p>
           <p className="text-xs" style={{ color: "#9a8e7e" }}>Nothing more to do — sit back and await your reading. 🌿</p>
         </div>
-        <Button onClick={() => navigate("/")} className="w-full text-white" style={{ background: GN }}>Back to Readings</Button>
+        <Button onClick={() => navigate(`/${slug}`)} className="w-full text-white" style={{ background: GN }}>Back to Readings</Button>
       </div>
     </div>
   );
@@ -160,14 +177,14 @@ export default function Book() {
       {/* Sticky header */}
       <div className="sticky top-0 z-10 border-b bg-white" style={{ borderColor: BORDER }}>
         <div className="max-w-xl mx-auto px-4 py-3">
-          <button onClick={() => step === 0 ? navigate("/") : setStep(s => s - 1)}
+          <button onClick={() => step === 0 ? navigate(`/${slug}`) : setStep(s => s - 1)}
             className="flex items-center gap-1 text-sm mb-2 transition-colors" style={{ color: "#9a8e7e" }}>
             <ChevronLeft className="h-4 w-4" /> {step === 0 ? "All Readings" : "Back"}
           </button>
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-semibold text-sm" style={{ color: DARK }}>{reading.name}</h1>
-              <p className="text-xs" style={{ color: "#9a8e7e" }}>{CATEGORY_LABELS[reading.category]} · ${reading.price} base</p>
+              <p className="text-xs" style={{ color: "#9a8e7e" }}>{reading.category} · ${reading.price} base</p>
             </div>
             <div className="flex gap-1.5 items-center">
               {STEPS.map((s, i) => (
@@ -213,7 +230,7 @@ export default function Book() {
                         {f === "audio" && "Live audio call on WhatsApp — scheduled"}
                         {f === "chat" && "Real-time text on WhatsApp"}
                         {f === "async" && "Written/recorded reply on WhatsApp within ~24h"}
-                        {f === "in_person" && "VaShava's studio, Harare, Zimbabwe"}
+                        {f === "in_person" && `${healer.name}'s location — confirmed via WhatsApp`}
                       </p>
                     </div>
                     {sel && <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />}
@@ -262,7 +279,7 @@ export default function Book() {
                     </div>
                   </div>
                 )}
-                <BookingCalendar selected={selectedSlot} onSelect={setSelectedSlot} />
+                <BookingCalendar slug={slug} selected={selectedSlot} onSelect={setSelectedSlot} />
               </div>
             )}
             <div className="flex items-center justify-between rounded-lg p-3 mt-4 mb-5" style={{ background: HERO, border: `1px solid ${GN}33` }}>
@@ -277,7 +294,7 @@ export default function Book() {
         {step === 2 && (
           <div>
             <h2 className="font-medium mb-1" style={{ color: DARK }}>About you</h2>
-            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential — only seen by VaShava.</p>
+            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential — only seen by {healer.name}.</p>
             <div className="space-y-4 mb-5">
               <div>
                 <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Full name *</Label>
@@ -348,7 +365,7 @@ export default function Book() {
                 <div>
                   <p className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: "#9a8e7e" }}><CreditCard className="h-3.5 w-3.5" /> 2. Payment reference number</p>
                   <Input placeholder="e.g. transaction / confirmation number" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} className="bg-white font-mono" />
-                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Enter the reference shown in your payment confirmation so VaShava can match it.</p>
+                  <p className="text-xs mt-1" style={{ color: "#b0a898" }}>Enter the reference shown in your payment confirmation so {healer.name} can match it.</p>
                 </div>
               )}
 
@@ -366,7 +383,7 @@ export default function Book() {
                   </p>
                 ) : (
                   <p className="text-xs mt-1" style={{ color: "#b0a898" }}>
-                    Must be an active WhatsApp number with country code — this is how VaShava reaches you.
+                    Must be an active WhatsApp number with country code — this is how {healer.name} reaches you.
                   </p>
                 )}
                 {waValid && (
@@ -406,7 +423,7 @@ export default function Book() {
         )}
       </div>
 
-      <ChatWidget />
+      <ChatWidget healerName={healer.name} waLink={`https://wa.me/${healer.whatsapp}`} />
     </div>
   );
 }

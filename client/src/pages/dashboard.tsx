@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -77,14 +77,14 @@ function clientWaLink(apt: Appointment, msg: string): string | null {
   return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 
-function startMessage(apt: Appointment): string {
+function startMessage(apt: Appointment, healerName: string): string {
   const fmt = FORMAT_LABELS[apt.format] || apt.format;
-  return `Hi ${apt.clientName || "there"}! ✦ This is VaShava from VaShava 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge — otherwise we'll need to reschedule.`;
+  return `Hi ${apt.clientName || "there"}! ✦ This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge — otherwise we'll need to reschedule.`;
 }
 
 // ---- Live session card ----------------------------------------------------
-function SessionCard({ apt, now, onStart, onComplete, onCancel, busy }: {
-  apt: Appointment; now: number;
+function SessionCard({ apt, now, healerName, onStart, onComplete, onCancel, busy }: {
+  apt: Appointment; now: number; healerName: string;
   onStart: (a: Appointment) => void; onComplete: (id: number) => void; onCancel: (id: number) => void; busy: boolean;
 }) {
   const t = sessionTiming(apt, now);
@@ -121,7 +121,7 @@ function SessionCard({ apt, now, onStart, onComplete, onCancel, busy }: {
         )}
         {apt.status === "in_progress" && (
           <>
-            <a href={clientWaLink(apt, startMessage(apt)) || "#"} target="_blank" rel="noreferrer" className="flex-1">
+            <a href={clientWaLink(apt, startMessage(apt, healerName)) || "#"} target="_blank" rel="noreferrer" className="flex-1">
               <Button size="sm" variant="outline" className="h-7 text-xs px-2.5 w-full" style={{ color: GN, borderColor: `${GN}55` }}>
                 <MessageCircle className="h-3.5 w-3.5 mr-1" /> Open chat
               </Button>
@@ -257,6 +257,8 @@ function CalendarView({ appointments }: { appointments: Appointment[] }) {
 }
 
 export default function Dashboard() {
+  const { slug } = useParams<{ slug: string }>();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
@@ -264,7 +266,7 @@ export default function Dashboard() {
   const [loginError, setLoginError] = useState("");
   const [filter, setFilter] = useState("all");
 
-  const { data: me, isLoading: authLoading } = useQuery<{ email: string; role: string; name: string } | null>({
+  const { data: me, isLoading: authLoading } = useQuery<{ healerId: number; slug: string; email: string; name: string } | null>({
     queryKey: ["/api/auth/me"],
     queryFn: async () => {
       const res = await fetch("/api/auth/me", { credentials: "include" });
@@ -275,6 +277,12 @@ export default function Dashboard() {
     retry: false,
   });
   const isLoggedIn = !!me;
+
+  // If signed in as a different hub than the one in the URL, send the
+  // browser to that healer's own dashboard rather than showing a mismatch.
+  useEffect(() => {
+    if (me && me.slug !== slug) navigate(`/${me.slug}/dashboard`);
+  }, [me, slug]);
 
   const login = useMutation({
     mutationFn: async () => {
@@ -354,7 +362,7 @@ export default function Dashboard() {
   };
 
   const startSession = (apt: Appointment) => {
-    const link = clientWaLink(apt, startMessage(apt));
+    const link = clientWaLink(apt, startMessage(apt, me?.name || ""));
     if (link) window.open(link, "_blank");
     mutate.mutate({ id: apt.id, action: "start" });
   };
@@ -374,14 +382,14 @@ export default function Dashboard() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="w-full max-w-xs">
         <div className="text-center mb-6">
-          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>✦ VaShava</p>
+          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>✦ African Spiritual Hub</p>
           <h1 className="text-xl font-semibold" style={{ color: DARK }}>Healer Dashboard</h1>
         </div>
         <div className="bg-white rounded-xl p-6 border" style={{ borderColor: BORDER }}>
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Email</Label>
-              <Input type="email" placeholder="vashava@…" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Input type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Password</Label>
@@ -392,10 +400,9 @@ export default function Dashboard() {
               {login.isPending ? "Signing in…" : "Sign In"}
             </Button>
           </form>
-          <p className="text-center text-xs mt-3" style={{ color: "#b0a898" }}>Demo login: vashava@vashava.com / healer123</p>
         </div>
         <p className="text-center mt-4">
-          <Link href="/"><span className="text-xs cursor-pointer" style={{ color: "#9a8e7e" }}>← Back to storefront</span></Link>
+          <Link href={`/${slug}`}><span className="text-xs cursor-pointer" style={{ color: "#9a8e7e" }}>← Back to storefront</span></Link>
         </p>
       </div>
     </div>
@@ -429,9 +436,9 @@ export default function Dashboard() {
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-white" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="text-sm font-semibold" style={{ color: GN }}>✦ VaShava's Dashboard</span>
+          <span className="text-sm font-semibold" style={{ color: GN }}>✦ {me?.name}'s Dashboard</span>
           <div className="flex items-center gap-1">
-            <Link href="/"><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
+            <Link href={`/${slug}`}><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
             <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#a03030" }} onClick={handleResetData} disabled={resetData.isPending}>
               <Trash2 className="h-3.5 w-3.5" /> {resetData.isPending ? "Resetting…" : "Reset Data"}
             </Button>
@@ -520,7 +527,7 @@ export default function Dashboard() {
           ) : (
             <div className="p-3 grid sm:grid-cols-2 gap-2.5 bg-white">
               {active.map(a => (
-                <SessionCard key={a.id} apt={a} now={now}
+                <SessionCard key={a.id} apt={a} now={now} healerName={me?.name || ""}
                   onStart={startSession} onComplete={(id) => act(id, "complete")} onCancel={(id) => act(id, "cancel")}
                   busy={mutate.isPending} />
               ))}
@@ -557,7 +564,7 @@ export default function Dashboard() {
             <div className="py-10 text-center">
               <AlertCircle className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd2bc" }} />
               <p className="text-sm" style={{ color: "#9a8e7e" }}>No {filter === "all" ? "" : filter} appointments yet.</p>
-              {filter === "all" && <Link href="/"><Button variant="link" className="mt-1 text-xs" style={{ color: GN }}>Go to storefront →</Button></Link>}
+              {filter === "all" && <Link href={`/${slug}`}><Button variant="link" className="mt-1 text-xs" style={{ color: GN }}>Go to storefront →</Button></Link>}
             </div>
           ) : (
             <div>{filtered.map(a => (

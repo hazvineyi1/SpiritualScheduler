@@ -1,13 +1,24 @@
 import {
-  type User, type InsertUser, type Appointment, type InsertAppointment,
+  type Healer, type InsertHealer, type Appointment, type InsertAppointment,
   type AvailabilityConfig, type UpdateAvailability, type DaySlot, type SlotStatus,
 } from "@shared/schema";
+import { STARTER_READINGS, STARTER_PRODUCTS, type Reading, type Product } from "@shared/types";
 
 // Thrown by createAppointment when the requested slot can't be booked.
 export class SlotUnavailableError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "SlotUnavailableError";
+  }
+}
+
+// Thrown when an action targets a healer/appointment that doesn't belong to
+// the acting healer, or a slug that isn't registered. Kept distinct from a
+// generic 404 so routes can respond with the right status code.
+export class NotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "NotFoundError";
   }
 }
 
@@ -36,86 +47,176 @@ function slotLabel(hour: number, minute: number): string {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+const DEFAULT_AVAILABILITY: AvailabilityConfig = {
+  weekdays: [1, 2, 3, 4, 5, 6], // Mon–Sat open by default
+  startHour: 9,
+  endHour: 17,
+  slotMinutes: 60,
+  blockedSlots: [],
+};
+
 export interface IStorage {
-  getUser(id: number): Promise<User | undefined>;
-  getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Healers — every healer's data (readings, products, availability,
+  // appointments) lives only on that healer's own record. No query here
+  // ever reads across healers except listHealers(), which returns only
+  // public directory fields (never catalogs, appointments, or credentials).
+  getHealer(id: number): Promise<Healer | undefined>;
+  getHealerBySlug(slug: string): Promise<Healer | undefined>;
+  getHealerByEmail(email: string): Promise<Healer | undefined>;
+  createHealer(data: InsertHealer): Promise<Healer>;
+  listHealers(): Promise<Healer[]>;
+  updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl">>): Promise<Healer>;
+  updateHealerCatalog(id: number, readings: Reading[], products: Product[]): Promise<Healer>;
 
-  getAllAppointments(): Promise<Appointment[]>;
-  getAppointment(id: number): Promise<Appointment | undefined>;
-  createAppointment(appointment: InsertAppointment): Promise<Appointment>;
-  updateAppointmentStatus(id: number, status: string, sessionLink?: string): Promise<Appointment>;
-  cancelAppointment(id: number): Promise<Appointment>;
-  resetAppointments(): void;
+  getAppointments(healerId: number): Promise<Appointment[]>;
+  getAppointment(healerId: number, id: number): Promise<Appointment | undefined>;
+  createAppointment(healerId: number, appointment: InsertAppointment): Promise<Appointment>;
+  updateAppointmentStatus(healerId: number, id: number, status: string, sessionLink?: string): Promise<Appointment>;
+  cancelAppointment(healerId: number, id: number): Promise<Appointment>;
+  resetAppointments(healerId: number): void;
 
-  getAvailability(): Promise<AvailabilityConfig>;
-  updateAvailability(update: UpdateAvailability): Promise<AvailabilityConfig>;
-  blockSlot(datetime: string): Promise<AvailabilityConfig>;
-  unblockSlot(datetime: string): Promise<AvailabilityConfig>;
-  getDaySlots(dateStr: string): Promise<DaySlot[]>;
+  getAvailability(healerId: number): Promise<AvailabilityConfig>;
+  updateAvailability(healerId: number, update: UpdateAvailability): Promise<AvailabilityConfig>;
+  blockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig>;
+  unblockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig>;
+  getDaySlots(healerId: number, dateStr: string): Promise<DaySlot[]>;
 }
 
 export class MemStorage implements IStorage {
-  private users: Map<number, User>;
+  private healers: Map<number, Healer>;
   private appointments: Map<number, Appointment>;
-  private availability: AvailabilityConfig;
-  private userIds = 1;
+  private healerIds = 1;
   private appointmentIds = 1;
 
   constructor() {
-    this.users = new Map();
+    this.healers = new Map();
     this.appointments = new Map();
-    this.availability = {
-      weekdays: [1, 2, 3, 4, 5, 6], // Mon–Sat open by default
-      startHour: 9,
-      endHour: 17,
-      slotMinutes: 60,
-      blockedSlots: [],
+
+    // Seed VaShava as the platform's first hub, migrated with her real data.
+    const vashava: Healer = {
+      id: this.healerIds++,
+      slug: "vashava",
+      email: "vashava@vashava.com",
+      password: "healer123",
+      name: "VaShava",
+      tagline: "Where Ancient Wisdom Meets Modern Healing",
+      location: "Harare, Zimbabwe · worldwide",
+      whatsapp: "263771234567",
+      avatarUrl: "/images/vashava-avatar.jpg",
+      headerImageUrl: "/images/eland.jpg",
+      zinathaVerified: true,
+      readings: [
+        { id: 1, name: "Matare/Consultation", category: "Guidance & Consultation", price: 20, description: "Kukurukura namuchembere — a general consultation to discuss whatever is on your mind with VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 2, name: "Yes/No Questions", category: "Guidance & Consultation", price: 10, description: "Mibvunzo inoda Hongu kana Kwete — quick, direct answers to yes-or-no questions.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 3, name: "Career Guidance", category: "Guidance & Consultation", price: 20, description: "Guidance on how to earn a living and navigate your career path.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 4, name: "Dreams/Makope Interpretation", category: "Guidance & Consultation", price: 10, description: "Kutsanangurirwa makope nezvaanoreva — understand what your dreams mean and the messages behind them.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
+        { id: 5, name: "Kunatira neKurutsiswa", category: "Ancestral & Cleansing", price: 30, description: "Kunatiriswa kana kuritsiswa namuchembere — traditional cleansing and spiritual help from the elder.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 6, name: "Kusimudza Muchembere", category: "Ancestral & Cleansing", price: 50, description: "Kusimudza muchembere kuuya kwake — invoking and raising the ancestral spirit to come forward.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 7, name: "Kutsikira Masango", category: "Ancestral & Cleansing", price: 50, description: "Kuenda namuchembere kumasango — an in-person journey with VaShava to the forest for sacred ritual work.", formats: ["in_person"], isAdult: false, isFixed: true },
+        { id: 8, name: "Cleansing/Chenura", category: "Ancestral & Cleansing", price: 30, description: "Cleansing — kuchenurwa namuchembere — a full spiritual cleansing performed by VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+      ],
+      products: [
+        { id: 1, name: "Chenura/Cleanse", price: 20, description: "Kuvhura mhanza — opens the mind, clears bad spirits, opens work and relationships, cleanses the stomach." },
+        { id: 2, name: "Ruva reMachembere", price: 20, description: "Reduces period pain and regulates your cycle — kuchenura chibereko." },
+        { id: 3, name: "JayaGuru", price: 25, description: "Detoxes the male circulatory system, supports male vitality and rejuvenation, kusimbisa musana." },
+        { id: 4, name: "Mutsvairo - Home Cleanse", price: 15, description: "Kudzinga mhepo/varoyi mumba — cleansing for new homes and business spaces, including homes with babies and children." },
+      ],
+      availability: { ...DEFAULT_AVAILABILITY },
+      createdAt: new Date().toISOString(),
     };
-
-    const healer: User = { id: this.userIds++, email: "vashava@vashava.com", password: "healer123", role: "healer" };
-    this.users.set(healer.id, healer);
+    this.healers.set(vashava.id, vashava);
   }
 
-  // Clears all appointments. Exposed via a healer-only API route so the
-  // practitioner can wipe test/demo bookings from the dashboard themselves.
-  resetAppointments() {
-    this.appointments.clear();
-    this.appointmentIds = 1;
+  // ---- Healers --------------------------------------------------------
+  async getHealer(id: number): Promise<Healer | undefined> {
+    return this.healers.get(id);
   }
 
-
-
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  async getHealerBySlug(slug: string): Promise<Healer | undefined> {
+    return Array.from(this.healers.values()).find(h => h.slug === slug.toLowerCase());
   }
 
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(u => u.email === email);
+  async getHealerByEmail(email: string): Promise<Healer | undefined> {
+    return Array.from(this.healers.values()).find(h => h.email === email);
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const id = this.userIds++;
-    const user: User = { id, email: insertUser.email, password: insertUser.password, role: insertUser.role ?? "client" };
-    this.users.set(id, user);
-    return user;
+  async createHealer(data: InsertHealer): Promise<Healer> {
+    const id = this.healerIds++;
+    const healer: Healer = {
+      id,
+      slug: data.slug.toLowerCase(),
+      email: data.email,
+      password: data.password,
+      name: data.name,
+      tagline: data.tagline ?? "",
+      location: data.location ?? "",
+      whatsapp: data.whatsapp,
+      avatarUrl: "",
+      headerImageUrl: "",
+      zinathaVerified: false,
+      readings: STARTER_READINGS.map((r, i) => ({ ...r, id: i + 1 })),
+      products: STARTER_PRODUCTS.map((p, i) => ({ ...p, id: i + 1 })),
+      availability: { ...DEFAULT_AVAILABILITY, blockedSlots: [] },
+      createdAt: new Date().toISOString(),
+    };
+    this.healers.set(id, healer);
+    return healer;
   }
 
-  async getAllAppointments(): Promise<Appointment[]> {
-    return Array.from(this.appointments.values()).sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+  // Public directory listing — deliberately returns full healer rows since
+  // this in-memory store only holds public profile fields plus each
+  // healer's OWN catalog; callers that render the directory only read the
+  // public fields (slug/name/tagline/etc.), never another healer's
+  // appointments, which live in a completely separate, healerId-scoped map.
+  async listHealers(): Promise<Healer[]> {
+    return Array.from(this.healers.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async getAppointment(id: number): Promise<Appointment | undefined> {
-    return this.appointments.get(id);
+  async updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl">>): Promise<Healer> {
+    const healer = this.healers.get(id);
+    if (!healer) throw new NotFoundError("Healer not found");
+    const updated = { ...healer, ...updates };
+    this.healers.set(id, updated);
+    return updated;
   }
 
-  // True when an active appointment already occupies the slot containing `iso`.
-  private slotIsBooked(iso: string, ignoreId?: number): boolean {
+  async updateHealerCatalog(id: number, readings: Reading[], products: Product[]): Promise<Healer> {
+    const healer = this.healers.get(id);
+    if (!healer) throw new NotFoundError("Healer not found");
+    const updated = { ...healer, readings, products };
+    this.healers.set(id, updated);
+    return updated;
+  }
+
+  // Clears one healer's appointments only. Exposed via a healer-only API
+  // route, scoped to req.session.user.id — a healer can only ever reset
+  // their own bookings, never another hub's.
+  resetAppointments(healerId: number) {
+    for (const [id, apt] of this.appointments) {
+      if (apt.healerId === healerId) this.appointments.delete(id);
+    }
+  }
+
+  async getAppointments(healerId: number): Promise<Appointment[]> {
+    return Array.from(this.appointments.values())
+      .filter(a => a.healerId === healerId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  async getAppointment(healerId: number, id: number): Promise<Appointment | undefined> {
+    const apt = this.appointments.get(id);
+    if (!apt || apt.healerId !== healerId) return undefined;
+    return apt;
+  }
+
+  // True when an active appointment already occupies the slot containing
+  // `iso`, scoped to a single healer's own bookings.
+  private slotIsBooked(healerId: number, iso: string, ignoreId?: number): boolean {
+    const cfg = this.availabilityFor(healerId);
     const start = new Date(iso).getTime();
-    const end = start + this.availability.slotMinutes * 60000;
+    const end = start + cfg.slotMinutes * 60000;
     for (const apt of this.appointments.values()) {
+      if (apt.healerId !== healerId) continue;
       if (apt.id === ignoreId) continue;
       if (!apt.datetime) continue;
       if (!OCCUPYING_STATUSES.includes(apt.status)) continue;
@@ -125,34 +226,40 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  // Validate that `iso` falls on an open, unblocked, free slot.
-  private assertSlotBookable(iso: string) {
+  private availabilityFor(healerId: number): AvailabilityConfig {
+    const healer = this.healers.get(healerId);
+    if (!healer) throw new NotFoundError("Healer not found");
+    return healer.availability ?? DEFAULT_AVAILABILITY;
+  }
+
+  // Validate that `iso` falls on an open, unblocked, free slot for this healer.
+  private assertSlotBookable(healerId: number, iso: string) {
     const when = new Date(iso);
     if (isNaN(when.getTime())) throw new SlotUnavailableError("Invalid session time.");
     if (when.getTime() < Date.now()) throw new SlotUnavailableError("That time is in the past — please pick another slot.");
     const { weekday, hour, dateStr, minute } = harareParts(when);
-    const cfg = this.availability;
-    if (!cfg.weekdays.includes(weekday)) throw new SlotUnavailableError("VaShava isn't available on that day. Please pick another.");
-    // Must land exactly on a generated slot boundary within working hours.
+    const cfg = this.availabilityFor(healerId);
+    if (!cfg.weekdays.includes(weekday)) throw new SlotUnavailableError("Not available on that day. Please pick another.");
     const totalMins = hour * 60 + minute;
     const openMins = cfg.startHour * 60;
     const closeMins = cfg.endHour * 60;
-    if (totalMins < openMins || totalMins >= closeMins) throw new SlotUnavailableError("That time is outside VaShava's working hours.");
+    if (totalMins < openMins || totalMins >= closeMins) throw new SlotUnavailableError("That time is outside working hours.");
     if ((totalMins - openMins) % cfg.slotMinutes !== 0) throw new SlotUnavailableError("That isn't a valid session start time. Please pick a slot from the calendar.");
     const canonical = slotIso(dateStr, hour, minute);
     if (cfg.blockedSlots.includes(canonical)) throw new SlotUnavailableError("That slot has been closed. Please pick another.");
-    if (this.slotIsBooked(iso)) throw new SlotUnavailableError("That slot was just booked. Please choose another available time.");
+    if (this.slotIsBooked(healerId, iso)) throw new SlotUnavailableError("That slot was just booked. Please choose another available time.");
   }
 
-  async createAppointment(data: InsertAppointment): Promise<Appointment> {
-    // Scheduled (non-async) sessions must land on a free, open slot.
+  async createAppointment(healerId: number, data: InsertAppointment): Promise<Appointment> {
+    if (!this.healers.has(healerId)) throw new NotFoundError("Healer not found");
     if (data.format !== "async") {
       if (!data.datetime) throw new SlotUnavailableError("Please choose a session time before booking.");
-      this.assertSlotBookable(data.datetime);
+      this.assertSlotBookable(healerId, data.datetime);
     }
     const id = this.appointmentIds++;
     const appointment: Appointment = {
       id,
+      healerId,
       readingId: data.readingId ?? null,
       readingName: data.readingName,
       category: data.category,
@@ -174,55 +281,66 @@ export class MemStorage implements IStorage {
     return appointment;
   }
 
-  async updateAppointmentStatus(id: number, status: string, sessionLink?: string): Promise<Appointment> {
+  async updateAppointmentStatus(healerId: number, id: number, status: string, sessionLink?: string): Promise<Appointment> {
     const apt = this.appointments.get(id);
-    if (!apt) throw new Error("Appointment not found");
+    if (!apt || apt.healerId !== healerId) throw new NotFoundError("Appointment not found");
     const updated: Appointment = { ...apt, status, sessionLink: sessionLink ?? apt.sessionLink };
     this.appointments.set(id, updated);
     return updated;
   }
 
-  async cancelAppointment(id: number): Promise<Appointment> {
-    return this.updateAppointmentStatus(id, "cancelled");
+  async cancelAppointment(healerId: number, id: number): Promise<Appointment> {
+    return this.updateAppointmentStatus(healerId, id, "cancelled");
   }
 
   // ---- Availability -------------------------------------------------------
-  async getAvailability(): Promise<AvailabilityConfig> {
-    return { ...this.availability, blockedSlots: [...this.availability.blockedSlots] };
+  async getAvailability(healerId: number): Promise<AvailabilityConfig> {
+    const cfg = this.availabilityFor(healerId);
+    return { ...cfg, blockedSlots: [...cfg.blockedSlots] };
   }
 
-  async updateAvailability(update: UpdateAvailability): Promise<AvailabilityConfig> {
-    const next = { ...this.availability, ...update };
+  async updateAvailability(healerId: number, update: UpdateAvailability): Promise<AvailabilityConfig> {
+    const healer = this.healers.get(healerId);
+    if (!healer) throw new NotFoundError("Healer not found");
+    const cfg = healer.availability ?? DEFAULT_AVAILABILITY;
+    const next = { ...cfg, ...update };
     if (next.endHour <= next.startHour) {
       throw new SlotUnavailableError("End time must be after the start time.");
     }
-    this.availability = next;
-    return this.getAvailability();
+    this.healers.set(healerId, { ...healer, availability: next });
+    return this.getAvailability(healerId);
   }
 
-  async blockSlot(datetime: string): Promise<AvailabilityConfig> {
+  async blockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig> {
+    const healer = this.healers.get(healerId);
+    if (!healer) throw new NotFoundError("Healer not found");
     const when = new Date(datetime);
     if (isNaN(when.getTime())) throw new SlotUnavailableError("Invalid slot.");
     const { dateStr, hour, minute } = harareParts(when);
     const canonical = slotIso(dateStr, hour, minute);
-    if (!this.availability.blockedSlots.includes(canonical)) {
-      this.availability.blockedSlots.push(canonical);
+    const cfg = healer.availability ?? DEFAULT_AVAILABILITY;
+    if (!cfg.blockedSlots.includes(canonical)) {
+      const next = { ...cfg, blockedSlots: [...cfg.blockedSlots, canonical] };
+      this.healers.set(healerId, { ...healer, availability: next });
     }
-    return this.getAvailability();
+    return this.getAvailability(healerId);
   }
 
-  async unblockSlot(datetime: string): Promise<AvailabilityConfig> {
+  async unblockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig> {
+    const healer = this.healers.get(healerId);
+    if (!healer) throw new NotFoundError("Healer not found");
     const when = new Date(datetime);
     if (isNaN(when.getTime())) throw new SlotUnavailableError("Invalid slot.");
     const { dateStr, hour, minute } = harareParts(when);
     const canonical = slotIso(dateStr, hour, minute);
-    this.availability.blockedSlots = this.availability.blockedSlots.filter(s => s !== canonical);
-    return this.getAvailability();
+    const cfg = healer.availability ?? DEFAULT_AVAILABILITY;
+    const next = { ...cfg, blockedSlots: cfg.blockedSlots.filter(s => s !== canonical) };
+    this.healers.set(healerId, { ...healer, availability: next });
+    return this.getAvailability(healerId);
   }
 
-  async getDaySlots(dateStr: string): Promise<DaySlot[]> {
-    const cfg = this.availability;
-    // Derive the weekday of this calendar date in Harare time.
+  async getDaySlots(healerId: number, dateStr: string): Promise<DaySlot[]> {
+    const cfg = this.availabilityFor(healerId);
     const weekday = harareParts(new Date(`${dateStr}T12:00:00+02:00`)).weekday;
     if (!cfg.weekdays.includes(weekday)) return [];
 
@@ -236,7 +354,7 @@ export class MemStorage implements IStorage {
       let status: SlotStatus;
       if (new Date(iso).getTime() < now) status = "past";
       else if (cfg.blockedSlots.includes(iso)) status = "closed";
-      else if (this.slotIsBooked(iso)) status = "booked";
+      else if (this.slotIsBooked(healerId, iso)) status = "booked";
       else status = "available";
       slots.push({ datetime: iso, label: slotLabel(hour, minute), status });
     }

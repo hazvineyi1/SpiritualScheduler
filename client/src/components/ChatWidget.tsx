@@ -5,24 +5,28 @@ const GN     = "#355e4a";
 const DARK   = "#1c1712";
 const BORDER = "#ddd2bc";
 const HERO   = "#f0ead9";
-const WA_LINK = "https://wa.me/263771234567";
 
 type Msg = { from: "bot" | "user"; text: string };
 
-const FAQS: Array<{ q: string; a: string }> = [
-  { q: "How do I book a reading?", a: "Browse the categories on the homepage, pick a reading that fits what you need, and tap \"Book.\" You'll upload proof of payment, then choose an available time slot — no account needed." },
-  { q: "What payment methods do you accept?", a: "EcoCash, InnBucks, Remitly, and World Remit are all accepted. Exact payment details are shown during checkout." },
-  { q: "Is my session private?", a: "Yes. Every session is confidential and never recorded. VaShava speaks English and Shona." },
-  { q: "How long does a reading take?", a: "Most readings run 30–60 minutes depending on the format you choose — video, audio, chat, or written." },
-  { q: "Can I reschedule or cancel?", a: "Message VaShava directly on WhatsApp as soon as you can, and she'll help sort out a new time." },
-  { q: "Do you offer in-person sessions?", a: "Yes — in-person consultations are available in Harare. The exact address is shared privately over WhatsApp once your booking is confirmed." },
-];
+interface Props {
+  healerName: string;
+  waLink: string;
+}
 
-export default function ChatWidget() {
+export default function ChatWidget({ healerName, waLink }: Props) {
+  const FAQS: Array<{ q: string; a: string }> = [
+    { q: "How do I book a reading?", a: `Browse the categories on the page, pick a reading that fits what you need, and tap "Book." You'll upload proof of payment, then choose an available time slot — no account needed.` },
+    { q: "What payment methods do you accept?", a: "EcoCash, InnBucks, Remitly, and World Remit are all accepted. Exact payment details are shown during checkout." },
+    { q: "Is my session private?", a: `Yes. Every session with ${healerName} is confidential and never recorded.` },
+    { q: "How long does a reading take?", a: "Most readings run 30–60 minutes depending on the format you choose — video, audio, chat, or written." },
+    { q: "Can I reschedule or cancel?", a: `Message ${healerName} directly on WhatsApp as soon as you can, and they'll help sort out a new time.` },
+    { q: "Do you offer in-person sessions?", a: "Some readings are available in person — check the listing for each reading, or ask on WhatsApp." },
+  ];
+
+  const greeting = `👋 Hi, I'm ${healerName}'s assistant. Pick a question below, or message ${healerName} directly on WhatsApp for anything else.`;
+
   const [open, setOpen] = useState(false);
-  const [messages, setMessages] = useState<Msg[]>([
-    { from: "bot", text: "👋 Hi, I'm VaShava's assistant. Pick a question below, or message VaShava directly on WhatsApp for anything else." },
-  ]);
+  const [messages, setMessages] = useState<Msg[]>([{ from: "bot", text: greeting }]);
   const [askedIds, setAskedIds] = useState<Set<number>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -37,7 +41,7 @@ export default function ChatWidget() {
   };
 
   const resetChat = () => {
-    setMessages([{ from: "bot", text: "👋 Hi, I'm VaShava's assistant. Pick a question below, or message VaShava directly on WhatsApp for anything else." }]);
+    setMessages([{ from: "bot", text: greeting }]);
     setAskedIds(new Set());
   };
 
@@ -62,7 +66,7 @@ export default function ChatWidget() {
           {/* Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between" style={{ background: HERO, borderColor: BORDER }}>
             <div>
-              <p className="text-sm font-semibold" style={{ color: DARK }}>✦ VaShava's Assistant</p>
+              <p className="text-sm font-semibold" style={{ color: DARK }}>✦ {healerName}'s Assistant</p>
               <p className="text-[11px]" style={{ color: "#9a8e7e" }}>Quick answers to common questions</p>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat">
@@ -112,13 +116,13 @@ export default function ChatWidget() {
 
           {/* WhatsApp fallback — always pinned at the bottom */}
           <a
-            href={`${WA_LINK}?text=${encodeURIComponent("Hi VaShava! I have a question.")}`}
+            href={`${waLink}?text=${encodeURIComponent(`Hi ${healerName}! I have a question.`)}`}
             target="_blank"
             rel="noreferrer"
             className="flex-shrink-0 flex items-center justify-center gap-1.5 text-xs font-medium py-2.5 text-white"
             style={{ background: GN }}
           >
-            <Send className="h-3.5 w-3.5" /> Message VaShava on WhatsApp
+            <Send className="h-3.5 w-3.5" /> Message {healerName} on WhatsApp
           </a>
         </div>
       )}
