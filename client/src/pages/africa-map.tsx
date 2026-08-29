@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
-import { ComposableMap, Geographies, Geography, Sphere, Graticule } from "react-simple-maps";
-import { geoCentroid, geoArea } from "d3-geo";
+import { ComposableMap, Geographies, Sphere, Graticule } from "react-simple-maps";
+import { geoCentroid, geoArea, type GeoProjection } from "d3-geo";
 import { Button } from "@/components/ui/button";
 
 const DARK        = "#1c1712";
@@ -13,9 +13,18 @@ const GRID        = "#c9a227";
 
 const GEO_URL = "/data/africa.json";
 
-// Small island nations don't have room for a readable label at this scale;
-// skip labels below this projected-area threshold (in steradians).
-const MIN_AREA_FOR_LABEL = 0.0009;
+// How far each country's own boundary is pulled in toward its own center,
+// so neighboring countries show a visible gap ("fragmented, pulled apart")
+// while every country still sits exactly where it geographically belongs.
+const FRAGMENT_SHRINK = 0.91;
+
+// Uniform label styling — every label is the same size; countries whose
+// label would collide with an already-placed one simply go unlabeled
+// rather than shrinking, so what IS shown stays fully legible.
+const LABEL_FONT_SIZE = 6.5;
+const LABEL_PADDING = 1.5;
+
+const MIN_AREA_FOR_LABEL = 0.00035;
 
 // Roughly centers the globe on Africa: [longitude, latitude, roll], negated
 // per d3-geo's rotation convention.
@@ -24,6 +33,60 @@ const AFRICA_CENTER: [number, number, number] = [-20, -3, 0];
 // rotates out of view — a full there-and-back cycle takes ~26 seconds.
 const SWAY_DEGREES = 14;
 const SWAY_PERIOD_MS = 26000;
+
+type Point = [number, number];
+
+// Projects a geometry's rings and shrinks every point toward `center` by
+// `scale`, returning an SVG path string. Handles Polygon and MultiPolygon.
+function buildFragmentPath(geometry: any, projection: GeoProjection, center: Point, scale: number): string {
+  const shrink = (lonLat: Point): Point | null => {
+    const p = projection(lonLat);
+    if (!p) return null;
+    return [center[0] + (p[0] - center[0]) * scale, center[1] + (p[1] - center[1]) * scale];
+  };
+  const ringToPath = (ring: Point[]): string => {
+    const pts = ring.map(shrink).filter((p): p is Point => p !== null);
+    if (pts.length < 3) return "";
+    return "M" + pts.map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join("L") + "Z";
+  };
+  if (geometry.type === "Polygon") {
+    return geometry.coordinates.map(ringToPath).join(" ");
+  }
+  if (geometry.type === "MultiPolygon") {
+    return geometry.coordinates.map((poly: Point[][]) => poly.map(ringToPath).join(" ")).join(" ");
+  }
+  return "";
+}
+
+interface LabelCandidate {
+  key: string;
+  name: string;
+  x: number;
+  y: number;
+  width: number;
+}
+
+// Greedy label placement: biggest countries get first claim on the space;
+// anything whose box would overlap an already-placed label is skipped
+// entirely, so every label that IS shown is fully clear at the same size.
+function placeLabels(candidates: LabelCandidate[]): Set<string> {
+  const placed: { x: number; y: number; width: number }[] = [];
+  const kept = new Set<string>();
+  for (const c of candidates) {
+    const halfW = c.width / 2 + LABEL_PADDING;
+    const halfH = LABEL_FONT_SIZE / 2 + LABEL_PADDING;
+    const overlaps = placed.some(p => {
+      const pHalfW = p.width / 2 + LABEL_PADDING;
+      const pHalfH = LABEL_FONT_SIZE / 2 + LABEL_PADDING;
+      return Math.abs(c.x - p.x) < halfW + pHalfW && Math.abs(c.y - p.y) < halfH + pHalfH;
+    });
+    if (!overlaps) {
+      placed.push({ x: c.x, y: c.y, width: c.width });
+      kept.add(c.key);
+    }
+  }
+  return kept;
+}
 
 export default function AfricaMap() {
   const [, navigate] = useLocation();
@@ -91,8 +154,8 @@ export default function AfricaMap() {
               <stop offset="70%" stopColor="#a97f3a" />
               <stop offset="100%" stopColor={BROWN_DARK} />
             </linearGradient>
-            <filter id="fragmentShadow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" floodColor="#3a2a12" floodOpacity="0.55" />
+            <filter id="fragmentShadow" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="1" stdDeviation="1.4" floodColor="#3a2a12" floodOpacity="0.6" />
             </filter>
             <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="6" result="blur" />
@@ -108,35 +171,56 @@ export default function AfricaMap() {
 
           <g filter="url(#glow)">
             <Geographies geography={GEO_URL}>
-              {({ geographies, projection }) =>
-                geographies.map((geo) => {
-                  const name = geo.properties!.slug as string;
-                  const displayName = geo.properties!.name as string;
-                  const isHovered = hovered === name;
+              {({ geographies, projection }) => {
+                // First pass: work out each visible country's true centroid
+                // and an estimated label footprint, then greedily decide
+                // which labels can be shown without colliding.
+                const withCentroids = geographies.map((geo) => {
+                  const slug = geo.properties!.slug as string;
+                  const name = geo.properties!.name as string;
                   const area = geoArea(geo as any);
-                  const showLabel = area > MIN_AREA_FOR_LABEL;
-                  const centroid = projection(geoCentroid(geo as any) as [number, number]);
+                  const centroid = projection(geoCentroid(geo as any) as Point);
+                  return { geo, slug, name, area, centroid };
+                });
+
+                const candidates: LabelCandidate[] = withCentroids
+                  .filter(c => c.centroid && c.area > MIN_AREA_FOR_LABEL)
+                  .map(c => ({
+                    key: c.slug,
+                    name: c.name,
+                    x: c.centroid![0],
+                    y: c.centroid![1],
+                    width: c.name.length * LABEL_FONT_SIZE * 0.56,
+                  }))
+                  .sort((a, b) => b.width - a.width);
+                const visibleLabels = placeLabels(candidates);
+
+                return withCentroids.map(({ geo, slug, name, centroid }) => {
+                  const isHovered = hovered === slug;
+                  const fragmentCenter: Point = centroid ?? [400, 400];
+                  const d = buildFragmentPath(geo.geometry, projection, fragmentCenter, FRAGMENT_SHRINK);
 
                   return (
                     <g key={geo.rsmKey}>
-                      <Geography
-                        geography={geo}
-                        onMouseEnter={() => setHovered(name)}
+                      <path
+                        d={d}
+                        onMouseEnter={() => setHovered(slug)}
                         onMouseLeave={() => setHovered(null)}
-                        onClick={() => navigate(`/country/${name}`)}
+                        onClick={() => navigate(`/country/${slug}`)}
                         fill={isHovered ? GOLD_BRIGHT : "url(#metalGradient)"}
                         stroke={isHovered ? "#ffffff" : "#3a2a12"}
-                        strokeWidth={isHovered ? 1.1 : 0.8}
+                        strokeWidth={isHovered ? 1.1 : 0.7}
                         filter="url(#fragmentShadow)"
                         style={{ outline: "none", cursor: "pointer", transition: "fill 120ms ease" }}
                       />
-                      {showLabel && centroid && (
+                      {visibleLabels.has(slug) && centroid && (
                         <text
                           x={centroid[0]}
                           y={centroid[1]}
                           textAnchor="middle"
+                          dominantBaseline="middle"
                           style={{
-                            fontSize: 6.5,
+                            fontSize: LABEL_FONT_SIZE,
                             fontWeight: 600,
                             fill: "#2a1d0f",
                             pointerEvents: "none",
@@ -146,13 +230,13 @@ export default function AfricaMap() {
                             strokeLinejoin: "round",
                           }}
                         >
-                          {displayName}
+                          {name}
                         </text>
                       )}
                     </g>
                   );
-                })
-              }
+                });
+              }}
             </Geographies>
           </g>
         </ComposableMap>
