@@ -20,7 +20,10 @@ const GEO_URL = "/data/africa.json";
 // Roughly centers the globe on Africa: [longitude, latitude, roll], negated
 // per d3-geo's rotation convention.
 const AFRICA_CENTER: [number, number, number] = [-20, -3, 0];
-const DEGREES_PER_SECOND = 3; // slow, stately rotation
+// A slow, gentle side-to-side sway rather than a full spin, so Africa never
+// rotates out of view — a full there-and-back cycle takes ~26 seconds.
+const SWAY_DEGREES = 14;
+const SWAY_PERIOD_MS = 26000;
 
 export default function AfricaMap() {
   const [, navigate] = useLocation();
@@ -28,14 +31,18 @@ export default function AfricaMap() {
   const [lambda, setLambda] = useState(AFRICA_CENTER[0]);
   const paused = useRef(false);
   const frame = useRef<number>();
+  const pauseOffset = useRef(0);
 
   useEffect(() => {
-    let last = performance.now();
+    const start = performance.now();
+    let lastElapsed = 0;
     const tick = (now: number) => {
-      const dt = (now - last) / 1000;
-      last = now;
       if (!paused.current) {
-        setLambda(l => l + DEGREES_PER_SECOND * dt);
+        lastElapsed = now - start - pauseOffset.current;
+        const phase = (lastElapsed % SWAY_PERIOD_MS) / SWAY_PERIOD_MS;
+        setLambda(AFRICA_CENTER[0] + SWAY_DEGREES * Math.sin(phase * Math.PI * 2));
+      } else {
+        pauseOffset.current = now - start - lastElapsed;
       }
       frame.current = requestAnimationFrame(tick);
     };
