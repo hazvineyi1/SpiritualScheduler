@@ -304,7 +304,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wipes only the signed-in healer's own appointment data.
   app.post("/api/appointments/reset-all", requireHealer, async (req, res) => {
     try {
-      storage.resetAppointments(req.session.user!.healerId);
+      await storage.resetAppointments(req.session.user!.healerId);
       res.json({ success: true });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to reset data" });

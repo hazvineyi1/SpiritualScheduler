@@ -1,8 +1,11 @@
 import {
   type Healer, type InsertHealer, type Appointment, type InsertAppointment,
   type AvailabilityConfig, type UpdateAvailability, type DaySlot, type SlotStatus,
+  healers as healersTable, appointments as appointmentsTable,
 } from "@shared/schema";
 import { STARTER_READINGS, STARTER_PRODUCTS, type Reading, type Product } from "@shared/types";
+import { db, ensureSchema } from "./db";
+import { eq } from "drizzle-orm";
 
 // Thrown by createAppointment when the requested slot can't be booked.
 export class SlotUnavailableError extends Error {
@@ -56,6 +59,11 @@ const DEFAULT_AVAILABILITY: AvailabilityConfig = {
 };
 
 export interface IStorage {
+  // Loads persisted data (if a database is configured) and seeds the
+  // platform's first hub on a genuinely empty database. Must be awaited
+  // once at server startup before handling any requests.
+  initialize(): Promise<void>;
+
   // Healers: every healer's data (readings, products, availability,
   // appointments) lives only on that healer's own record. No query here
   // ever reads across healers except listHealers(), which returns only
@@ -73,7 +81,7 @@ export interface IStorage {
   createAppointment(healerId: number, appointment: InsertAppointment): Promise<Appointment>;
   updateAppointmentStatus(healerId: number, id: number, status: string, sessionLink?: string): Promise<Appointment>;
   cancelAppointment(healerId: number, id: number): Promise<Appointment>;
-  resetAppointments(healerId: number): void;
+  resetAppointments(healerId: number): Promise<void>;
 
   getAvailability(healerId: number): Promise<AvailabilityConfig>;
   updateAvailability(healerId: number, update: UpdateAvailability): Promise<AvailabilityConfig>;
@@ -95,10 +103,13 @@ export class MemStorage implements IStorage {
   constructor() {
     this.healers = new Map();
     this.appointments = new Map();
+  }
 
-    // Seed VaShava as the platform's first hub, migrated with her real data.
-    const vashava: Healer = {
-      id: this.healerIds++,
+  // VaShava's real data, migrated as the platform's first hub. Used both as
+  // the in-memory-only seed (no database configured) and as the one-time
+  // database seed on a genuinely fresh database.
+  private vashavaSeed(): Omit<Healer, "id"> {
+    return {
       slug: "vashava",
       email: "vashava@vashava.com",
       password: "healer123",
@@ -129,7 +140,52 @@ export class MemStorage implements IStorage {
       availability: { ...DEFAULT_AVAILABILITY },
       createdAt: new Date().toISOString(),
     };
-    this.healers.set(vashava.id, vashava);
+  }
+
+  // Loads every healer and appointment from Postgres into the in-memory
+  // maps (write-through cache), or — with no database configured — falls
+  // back to seeding VaShava in memory only, matching the app's original
+  // behavior for local development.
+  async initialize(): Promise<void> {
+    if (!db) {
+      const seed = this.vashavaSeed();
+      const vashava: Healer = { id: this.healerIds++, ...seed };
+      this.healers.set(vashava.id, vashava);
+      return;
+    }
+
+    await ensureSchema();
+
+    const healerRows = await db.select().from(healersTable);
+    if (healerRows.length === 0) {
+      const [inserted] = await db.insert(healersTable).values(this.vashavaSeed()).returning();
+      healerRows.push(inserted);
+    }
+    for (const row of healerRows) {
+      this.healers.set(row.id, row as Healer);
+      this.healerIds = Math.max(this.healerIds, row.id + 1);
+    }
+
+    const aptRows = await db.select().from(appointmentsTable);
+    for (const row of aptRows) {
+      this.appointments.set(row.id, row as Appointment);
+      this.appointmentIds = Math.max(this.appointmentIds, row.id + 1);
+    }
+  }
+
+  // Write-through helpers: after the in-memory map is updated, mirror the
+  // same row to Postgres when a database is configured. No-op otherwise
+  // (pure in-memory mode for local dev without DATABASE_URL).
+  private async persistHealer(healer: Healer): Promise<void> {
+    if (!db) return;
+    const { id, ...rest } = healer;
+    await db.update(healersTable).set(rest).where(eq(healersTable.id, id));
+  }
+
+  private async persistAppointment(apt: Appointment): Promise<void> {
+    if (!db) return;
+    const { id, ...rest } = apt;
+    await db.update(appointmentsTable).set(rest).where(eq(appointmentsTable.id, id));
   }
 
   // ---- Healers --------------------------------------------------------
@@ -146,9 +202,7 @@ export class MemStorage implements IStorage {
   }
 
   async createHealer(data: InsertHealer): Promise<Healer> {
-    const id = this.healerIds++;
-    const healer: Healer = {
-      id,
+    const base = {
       slug: data.slug.toLowerCase(),
       email: data.email,
       password: data.password,
@@ -165,7 +219,17 @@ export class MemStorage implements IStorage {
       availability: { ...DEFAULT_AVAILABILITY, blockedSlots: [] },
       createdAt: new Date().toISOString(),
     };
-    this.healers.set(id, healer);
+    let healer: Healer;
+    if (db) {
+      // Let Postgres assign the authoritative id (SERIAL), then mirror it
+      // into the in-memory map so every other method keeps working unchanged.
+      const [row] = await db.insert(healersTable).values(base).returning();
+      healer = row as Healer;
+    } else {
+      healer = { id: this.healerIds++, ...base };
+    }
+    this.healers.set(healer.id, healer);
+    this.healerIds = Math.max(this.healerIds, healer.id + 1);
     return healer;
   }
 
@@ -183,6 +247,7 @@ export class MemStorage implements IStorage {
     if (!healer) throw new NotFoundError("Healer not found");
     const updated = { ...healer, ...updates };
     this.healers.set(id, updated);
+    await this.persistHealer(updated);
     return updated;
   }
 
@@ -191,15 +256,19 @@ export class MemStorage implements IStorage {
     if (!healer) throw new NotFoundError("Healer not found");
     const updated = { ...healer, readings, products };
     this.healers.set(id, updated);
+    await this.persistHealer(updated);
     return updated;
   }
 
   // Clears one healer's appointments only. Exposed via a healer-only API
   // route, scoped to req.session.user.id, a healer can only ever reset
   // their own bookings, never another hub's.
-  resetAppointments(healerId: number) {
+  async resetAppointments(healerId: number): Promise<void> {
     for (const [id, apt] of this.appointments) {
       if (apt.healerId === healerId) this.appointments.delete(id);
+    }
+    if (db) {
+      await db.delete(appointmentsTable).where(eq(appointmentsTable.healerId, healerId));
     }
   }
 
@@ -262,9 +331,7 @@ export class MemStorage implements IStorage {
       if (!data.datetime) throw new SlotUnavailableError("Please choose a session time before booking.");
       this.assertSlotBookable(healerId, data.datetime);
     }
-    const id = this.appointmentIds++;
-    const appointment: Appointment = {
-      id,
+    const base = {
       healerId,
       readingId: data.readingId ?? null,
       readingName: data.readingName,
@@ -283,7 +350,15 @@ export class MemStorage implements IStorage {
       sessionLink: null,
       createdAt: new Date().toISOString(),
     };
-    this.appointments.set(id, appointment);
+    let appointment: Appointment;
+    if (db) {
+      const [row] = await db.insert(appointmentsTable).values(base).returning();
+      appointment = row as Appointment;
+    } else {
+      appointment = { id: this.appointmentIds++, ...base };
+    }
+    this.appointments.set(appointment.id, appointment);
+    this.appointmentIds = Math.max(this.appointmentIds, appointment.id + 1);
     return appointment;
   }
 
@@ -292,6 +367,7 @@ export class MemStorage implements IStorage {
     if (!apt || apt.healerId !== healerId) throw new NotFoundError("Appointment not found");
     const updated: Appointment = { ...apt, status, sessionLink: sessionLink ?? apt.sessionLink };
     this.appointments.set(id, updated);
+    await this.persistAppointment(updated);
     return updated;
   }
 
@@ -313,7 +389,9 @@ export class MemStorage implements IStorage {
     if (next.endHour <= next.startHour) {
       throw new SlotUnavailableError("End time must be after the start time.");
     }
-    this.healers.set(healerId, { ...healer, availability: next });
+    const updated = { ...healer, availability: next };
+    this.healers.set(healerId, updated);
+    await this.persistHealer(updated);
     return this.getAvailability(healerId);
   }
 
@@ -327,7 +405,9 @@ export class MemStorage implements IStorage {
     const cfg = healer.availability ?? DEFAULT_AVAILABILITY;
     if (!cfg.blockedSlots.includes(canonical)) {
       const next = { ...cfg, blockedSlots: [...cfg.blockedSlots, canonical] };
-      this.healers.set(healerId, { ...healer, availability: next });
+      const updated = { ...healer, availability: next };
+      this.healers.set(healerId, updated);
+      await this.persistHealer(updated);
     }
     return this.getAvailability(healerId);
   }
@@ -341,7 +421,9 @@ export class MemStorage implements IStorage {
     const canonical = slotIso(dateStr, hour, minute);
     const cfg = healer.availability ?? DEFAULT_AVAILABILITY;
     const next = { ...cfg, blockedSlots: cfg.blockedSlots.filter(s => s !== canonical) };
-    this.healers.set(healerId, { ...healer, availability: next });
+    const updated = { ...healer, availability: next };
+    this.healers.set(healerId, updated);
+    await this.persistHealer(updated);
     return this.getAvailability(healerId);
   }
 

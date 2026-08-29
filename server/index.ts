@@ -1,14 +1,18 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPgSimple from "connect-pg-simple";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { storage } from "./storage";
+import { pool } from "./db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 const MemoryStore = createMemoryStore(session);
+const PgStore = connectPgSimple(session);
 const isProd = app.get("env") === "production";
 const sessionSecret = process.env.SESSION_SECRET || (isProd ? "" : "vashava-dev-secret");
 if (!sessionSecret) {
@@ -20,7 +24,11 @@ app.use(
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStore({ checkPeriod: 86400000 }),
+    // Sessions persist across restarts when a database is configured;
+    // otherwise fall back to the original in-memory store for local dev.
+    store: pool
+      ? new PgStore({ pool, tableName: "session", createTableIfMissing: true })
+      : new MemoryStore({ checkPeriod: 86400000 }),
     cookie: { httpOnly: true, sameSite: "lax", secure: isProd, maxAge: 7 * 24 * 60 * 60 * 1000 },
   }),
 );
@@ -56,6 +64,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  await storage.initialize();
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
