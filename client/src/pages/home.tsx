@@ -61,12 +61,12 @@ export default function Home() {
       </nav>
 
       {/* HEADER BANNER — full width */}
-      <div className="w-full h-64 sm:h-80 md:h-96 overflow-hidden">
+      <div className="w-full h-72 sm:h-96 md:h-[28rem] overflow-hidden">
         <img
           src="/images/eland.jpg"
           alt="Kunatira / Kurutsiswa — traditional cleansing"
           className="w-full h-full object-cover"
-          style={{ objectPosition: "center 35%" }}
+          style={{ objectPosition: "center 46%" }}
         />
       </div>
 
