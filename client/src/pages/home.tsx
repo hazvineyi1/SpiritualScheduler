@@ -60,6 +60,16 @@ export default function Home() {
         </div>
       </nav>
 
+      {/* HEADER BANNER — full width */}
+      <div className="w-full h-64 sm:h-80 md:h-96 overflow-hidden">
+        <img
+          src="/images/eland.jpg"
+          alt="Kunatira / Kurutsiswa — traditional cleansing"
+          className="w-full h-full object-cover"
+          style={{ objectPosition: "center 35%" }}
+        />
+      </div>
+
       {/* HERO */}
       <section style={{ background: HERO, borderBottom: `1px solid ${BORDER}` }}>
         <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col sm:flex-row gap-5 sm:items-center">
@@ -94,12 +104,6 @@ export default function Home() {
               <p className="font-medium mb-0.5" style={{ color: GN }}>🔒 Your privacy matters</p>
               <p style={{ color: "#7a6e5e" }}>Sessions are private and never recorded. English & Shona spoken.</p>
             </div>
-            <img
-              src="/images/eland.jpg"
-              alt="Kunatira / Kurutsiswa — traditional cleansing"
-              className="w-full rounded-lg object-cover"
-              style={{ border: `1px solid ${BORDER}`, maxHeight: 260 }}
-            />
           </div>
         </div>
       </section>
