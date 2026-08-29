@@ -314,6 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/profile", requireHealer, async (req, res) => {
     try {
       const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl } = req.body;
+      if (!name?.trim()) return res.status(400).json({ success: false, error: "Name is required" });
       const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl });
       req.session.user!.name = updated.name;
       res.json({ success: true, data: publicHealer(updated) });
@@ -328,7 +329,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!Array.isArray(readings) || !Array.isArray(products)) {
         return res.status(400).json({ success: false, error: "readings and products must be arrays" });
       }
-      const updated = await storage.updateHealerCatalog(req.session.user!.healerId, readings, products);
+      for (const r of readings) {
+        if (!r.name?.trim() || !r.category?.trim() || typeof r.price !== "number" || r.price <= 0) {
+          return res.status(400).json({ success: false, error: "Each reading needs a name, category, and price greater than 0." });
+        }
+        if (!Array.isArray(r.formats) || r.formats.length === 0) {
+          return res.status(400).json({ success: false, error: `"${r.name}" needs at least one session format.` });
+        }
+      }
+      for (const p of products) {
+        if (!p.name?.trim() || typeof p.price !== "number" || p.price <= 0) {
+          return res.status(400).json({ success: false, error: "Each product needs a name and price greater than 0." });
+        }
+      }
+      // Renumber IDs sequentially server-side so client-generated temp IDs
+      // (for newly added items) can never collide with existing ones.
+      const cleanReadings = readings.map((r: any, i: number) => ({ ...r, id: i + 1, price: Math.round(r.price) }));
+      const cleanProducts = products.map((p: any, i: number) => ({ ...p, id: i + 1, price: Math.round(p.price) }));
+      const updated = await storage.updateHealerCatalog(req.session.user!.healerId, cleanReadings, cleanProducts);
       res.json({ success: true, data: publicHealer(updated) });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to update catalog" });

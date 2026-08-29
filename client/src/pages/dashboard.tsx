@@ -11,10 +11,11 @@ import type { Appointment } from "@shared/schema";
 import { FORMAT_LABELS } from "@shared/types";
 import {
   CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List,
-  LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock, Trash2,
+  LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock, Trash2, Settings,
 } from "lucide-react";
 import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
+import HubSettings from "@/components/dashboard/HubSettings";
 
 const BG     = "#faf7f2";
 const HERO   = "#f0ead9";
@@ -305,6 +306,7 @@ export default function Dashboard() {
     onSuccess: () => { qc.clear(); },
   });
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [page, setPage] = useState<"bookings" | "settings">("bookings");
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -449,6 +451,27 @@ export default function Dashboard() {
         </div>
       </header>
 
+      {/* Page tabs */}
+      <div className="border-b bg-white" style={{ borderColor: BORDER }}>
+        <div className="max-w-5xl mx-auto px-4 flex">
+          <button onClick={() => setPage("bookings")}
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5"
+            style={{ borderColor: page === "bookings" ? GN : "transparent", color: page === "bookings" ? GN : "#9a8e7e" }}>
+            <CalendarClock className="h-3.5 w-3.5" /> Bookings
+          </button>
+          <button onClick={() => setPage("settings")}
+            className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors flex items-center gap-1.5"
+            style={{ borderColor: page === "settings" ? GN : "transparent", color: page === "settings" ? GN : "#9a8e7e" }}>
+            <Settings className="h-3.5 w-3.5" /> Hub Settings
+          </button>
+        </div>
+      </div>
+
+      {page === "settings" ? (
+        <div className="max-w-5xl mx-auto px-4 py-5">
+          <HubSettings slug={slug} />
+        </div>
+      ) : (
       <div className="max-w-5xl mx-auto px-4 py-5 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -599,6 +622,7 @@ export default function Dashboard() {
           ))}
         </div>
       </div>
+      )}
     </div>
   );
 }
