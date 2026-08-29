@@ -80,7 +80,7 @@ function clientWaLink(apt: Appointment, msg: string): string | null {
 
 function startMessage(apt: Appointment, healerName: string): string {
   const fmt = FORMAT_LABELS[apt.format] || apt.format;
-  return `Hi ${apt.clientName || "there"}! This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge; otherwise we'll need to reschedule.`;
+  return `Hi ${apt.clientName || "there"}! This is ${healerName}. We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge; otherwise we'll need to reschedule.`;
 }
 
 // ---- Live session card ----------------------------------------------------

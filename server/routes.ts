@@ -26,7 +26,7 @@ function generateSessionLink(healerName: string, healerWhatsapp: string, format:
 
 function buildWhatsAppVerifyUrl(apt: any, healerName: string): string {
   const date = apt.datetime ? new Date(apt.datetime).toLocaleString("en-ZW", { timeZone: "Africa/Harare" }) : "as arranged";
-  const msg = `✨ Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). ${healerName} will message you here when it's time to begin. Thank you for booking. 🌿`;
+  const msg = `Hi${apt.clientName ? ` ${apt.clientName}` : ""}! Your booking for *${apt.readingName}* is confirmed for ${date} (CAT). ${healerName} will message you here when it's time to begin. Thank you for booking.`;
   return `https://wa.me/${apt.whatsappNumber.replace(/\D/g, "")}?text=${encodeURIComponent(msg)}`;
 }
 
