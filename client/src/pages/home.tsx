@@ -100,7 +100,7 @@ export default function Home() {
       {/* NAV */}
       <nav className="sticky top-0 z-50 border-b" style={{ background: HERO, borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href={`/${slug}`}><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>✦ {healer.name}</span></Link>
+          <Link href={`/${slug}`}><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>{healer.name}</span></Link>
           <div className="flex items-center gap-2">
             <a href={waLink} target="_blank" rel="noreferrer">
               <Button size="sm" className="h-7 text-xs gap-1.5 text-white" style={{ background: GN }}>
@@ -286,7 +286,7 @@ export default function Home() {
       </div>
 
       <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
-        <span style={{ color: GN }}>✦ {healer.name}</span>{healer.location ? ` · ${healer.location}` : ""}
+        <span style={{ color: GN }}>{healer.name}</span>{healer.location ? ` · ${healer.location}` : ""}
       </footer>
 
       <ChatWidget healerName={healer.name} waLink={waLink} />

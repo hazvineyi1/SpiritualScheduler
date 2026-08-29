@@ -50,7 +50,7 @@ export default function CountryHub() {
       {/* NAV */}
       <nav className="border-b" style={{ background: HERO, borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>✦ African Spiritual Hub</span></Link>
+          <Link href="/"><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>African Spiritual Hub</span></Link>
           <Link href="/signup">
             <Button size="sm" className="h-7 text-xs text-white" style={{ background: GN }}>List Your Practice</Button>
           </Link>
@@ -138,7 +138,7 @@ export default function CountryHub() {
       </div>
 
       <footer className="text-center text-xs py-6 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
-        <span style={{ color: GN }}>✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
+        <span style={{ color: GN }}>African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
       </footer>
     </div>
   );

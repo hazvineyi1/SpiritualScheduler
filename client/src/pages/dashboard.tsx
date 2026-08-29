@@ -80,7 +80,7 @@ function clientWaLink(apt: Appointment, msg: string): string | null {
 
 function startMessage(apt: Appointment, healerName: string): string {
   const fmt = FORMAT_LABELS[apt.format] || apt.format;
-  return `Hi ${apt.clientName || "there"}! ✦ This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge; otherwise we'll need to reschedule.`;
+  return `Hi ${apt.clientName || "there"}! This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge; otherwise we'll need to reschedule.`;
 }
 
 // ---- Live session card ----------------------------------------------------
@@ -384,7 +384,7 @@ export default function Dashboard() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="w-full max-w-xs">
         <div className="text-center mb-6">
-          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>✦ African Spiritual Hub</p>
+          <p className="text-sm font-medium mb-0.5" style={{ color: GN }}>African Spiritual Hub</p>
           <h1 className="text-xl font-semibold" style={{ color: DARK }}>Healer Dashboard</h1>
         </div>
         <div className="bg-white rounded-xl p-6 border" style={{ borderColor: BORDER }}>
@@ -438,7 +438,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="sticky top-0 z-10 border-b bg-white" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="text-sm font-semibold" style={{ color: GN }}>✦ {me?.name}'s Dashboard</span>
+          <span className="text-sm font-semibold" style={{ color: GN }}>{me?.name}'s Dashboard</span>
           <div className="flex items-center gap-1">
             <Link href={`/${slug}`}><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
             <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#a03030" }} onClick={handleResetData} disabled={resetData.isPending}>

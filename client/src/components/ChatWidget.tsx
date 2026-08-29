@@ -66,7 +66,7 @@ export default function ChatWidget({ healerName, waLink }: Props) {
           {/* Header */}
           <div className="px-4 py-3 border-b flex items-center justify-between" style={{ background: HERO, borderColor: BORDER }}>
             <div>
-              <p className="text-sm font-semibold" style={{ color: DARK }}>✦ {healerName}'s Assistant</p>
+              <p className="text-sm font-semibold" style={{ color: DARK }}>{healerName}'s Assistant</p>
               <p className="text-[11px]" style={{ color: "#9a8e7e" }}>Quick answers to common questions</p>
             </div>
             <button onClick={() => setOpen(false)} aria-label="Close chat">

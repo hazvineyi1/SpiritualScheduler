@@ -30,6 +30,13 @@ const CHAR_WIDTH_FACTOR = 0.56;
 const TILT_DEGREES = 8;
 const TILT_PERIOD_MS = 22000;
 
+// The map's own SVG viewBox — external labels are clamped to stay fully
+// inside this area so a name never gets cut off at the edge (e.g. Cabo
+// Verde, out in the Atlantic, previously got pushed half off-canvas).
+const VIEWBOX_WIDTH = 800;
+const VIEWBOX_HEIGHT = 840;
+const EDGE_MARGIN = 6;
+
 type Point = [number, number];
 
 function buildFragment(geometry: any, projection: GeoProjection, center: Point, scale: number) {
@@ -73,6 +80,17 @@ function boxesOverlap(ax: number, ay: number, aw: number, bx: number, by: number
   return Math.abs(ax - bx) < aw / 2 + bw / 2 + LABEL_PADDING * 2 && Math.abs(ay - by) < halfH * 2;
 }
 
+// Keeps a label's full text (given its width) fully inside the visible
+// canvas, so nothing gets cut off at an edge.
+function clampToCanvas(x: number, y: number, width: number): Point {
+  const halfW = width / 2 + EDGE_MARGIN;
+  const halfH = LABEL_FONT_SIZE / 2 + EDGE_MARGIN;
+  return [
+    Math.min(Math.max(x, halfW), VIEWBOX_WIDTH - halfW),
+    Math.min(Math.max(y, halfH), VIEWBOX_HEIGHT - halfH),
+  ];
+}
+
 // Every country gets a label. Bigger countries claim their own space first;
 // anything that doesn't fit its own fragment, or loses a collision, is
 // pushed outward along the line from the continent's center through the
@@ -100,8 +118,7 @@ function placeAllLabels(
     const angle = Math.atan2(cy - mapCenter[1], cx - mapCenter[0]) || 0;
     let done = false;
     for (let dist = 16; dist <= 110; dist += 9) {
-      const ex = cx + Math.cos(angle) * dist;
-      const ey = cy + Math.sin(angle) * dist;
+      const [ex, ey] = clampToCanvas(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, width);
       if (!placed.some(p => boxesOverlap(ex, ey, width, p.x, p.y, p.width))) {
         placed.push({ slug: f.slug, name: f.name, x: ex, y: ey, width, external: true, from: [cx, cy] });
         done = true;
@@ -110,8 +127,7 @@ function placeAllLabels(
     }
     if (!done) {
       const dist = 110;
-      const ex = cx + Math.cos(angle) * dist;
-      const ey = cy + Math.sin(angle) * dist;
+      const [ex, ey] = clampToCanvas(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, width);
       placed.push({ slug: f.slug, name: f.name, x: ex, y: ey, width, external: true, from: [cx, cy] });
     }
   }
@@ -140,7 +156,7 @@ export default function AfricaMap() {
       {/* NAV */}
       <nav className="border-b" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="font-semibold text-sm tracking-wide" style={{ color: DARK }}>✦ African Spiritual Hub</span>
+          <span className="font-semibold text-sm tracking-wide" style={{ color: DARK }}>African Spiritual Hub</span>
           <Link href="/signup">
             <Button size="sm" className="h-7 text-xs text-white" style={{ background: BRONZE_DARK }}>List Your Practice</Button>
           </Link>
@@ -200,7 +216,6 @@ export default function AfricaMap() {
                   : [400, 420];
 
                 const labels = placeAllLabels(fragments, mapCenter);
-                const labelBySlug = new Map(labels.map(l => [l.slug, l]));
 
                 return (
                   <>
@@ -239,11 +254,14 @@ export default function AfricaMap() {
                           y={l.y}
                           textAnchor="middle"
                           dominantBaseline="middle"
+                          onClick={() => navigate(`/country/${l.slug}`)}
+                          onMouseEnter={() => setHovered(l.slug)}
+                          onMouseLeave={() => setHovered(null)}
                           style={{
                             fontSize: LABEL_FONT_SIZE,
                             fontWeight: 700,
                             fill: "#1c1006",
-                            pointerEvents: "none",
+                            cursor: "pointer",
                             paintOrder: "stroke",
                             stroke: "#f7ecd2",
                             strokeWidth: 2.1,
@@ -263,7 +281,7 @@ export default function AfricaMap() {
       </div>
 
       <footer className="text-center text-xs py-6 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
-        <span style={{ color: BRONZE_DARK }}>✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
+        <span style={{ color: BRONZE_DARK }}>African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
       </footer>
     </div>
   );
