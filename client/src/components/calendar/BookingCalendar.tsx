@@ -6,9 +6,9 @@ import { adjustToZimbabweTime } from "@/lib/utils";
 import { Loader2, Lock, CheckCircle2 } from "lucide-react";
 import type { AvailabilityConfig, DaySlot } from "@shared/schema";
 
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN     = "#355e4a";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN     = "#2d4a3a";
 const DARK   = "#1c1712";
 
 interface BookingCalendarProps {
@@ -75,7 +75,7 @@ export default function BookingCalendar({ slug, selected, onSelect }: BookingCal
         />
         <div className="px-3 pb-3 pt-1 flex items-center gap-3 text-[11px]" style={{ color: "#9a8e7e" }}>
           <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: GN }} /> Open</span>
-          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "#ddd2bc" }} /> Closed / past</span>
+          <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ background: "#c9b896" }} /> Closed / past</span>
         </div>
       </div>
 

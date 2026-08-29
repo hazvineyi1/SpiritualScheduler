@@ -17,16 +17,16 @@ import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
 import HubSettings from "@/components/dashboard/HubSettings";
 
-const BG     = "#faf7f2";
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN     = "#355e4a";
+const BG     = "#f5efe0";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN     = "#2d4a3a";
 const DARK   = "#1c1712";
 const GOLD   = "#a2532e";
 
 const STATUS_BADGE: Record<string, { bg: string; color: string }> = {
   pending_verification: { bg: "#fff8e6", color: "#8a6010" },
-  confirmed:            { bg: "#f0ead9", color: "#a2532e" },
+  confirmed:            { bg: "#e6d7b3", color: "#a2532e" },
   in_progress:          { bg: "#eafaf0", color: "#1f7a3f" },
   declined:             { bg: "#fef2f2", color: "#a03030" },
   completed:            { bg: "#eff6ff", color: "#2050a0" },
@@ -543,7 +543,7 @@ export default function Dashboard() {
           </div>
           {active.length === 0 ? (
             <div className="py-8 text-center bg-white">
-              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd2bc" }} />
+              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#c9b896" }} />
               <p className="text-sm" style={{ color: "#9a8e7e" }}>No confirmed sessions yet.</p>
               <p className="text-xs mt-0.5" style={{ color: "#b0a898" }}>Verify a payment to schedule a session.</p>
             </div>
@@ -585,7 +585,7 @@ export default function Dashboard() {
             <div className="p-4 space-y-2">{[1,2,3].map(i => <Skeleton key={i} className="h-14 w-full" />)}</div>
           ) : filtered.length === 0 ? (
             <div className="py-10 text-center">
-              <AlertCircle className="h-7 w-7 mx-auto mb-2" style={{ color: "#ddd2bc" }} />
+              <AlertCircle className="h-7 w-7 mx-auto mb-2" style={{ color: "#c9b896" }} />
               <p className="text-sm" style={{ color: "#9a8e7e" }}>No {filter === "all" ? "" : filter} appointments yet.</p>
               {filter === "all" && <Link href={`/${slug}`}><Button variant="link" className="mt-1 text-xs" style={{ color: GN }}>Go to storefront →</Button></Link>}
             </div>

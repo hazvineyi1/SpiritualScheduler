@@ -19,14 +19,16 @@ interface PublicHealer {
   avatarUrl: string;
   headerImageUrl: string;
   zinathaVerified: boolean;
+  shopEnabled: boolean;
   readings: Reading[];
   products: Product[];
 }
 
-const BG     = "#faf7f2";
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN     = "#355e4a";
+const BG     = "#f5efe0";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN     = "#2d4a3a";
+const NAV_BG = "#1f3d2e";
 const DARK   = "#1c1712";
 const GOLD   = "#a2532e";
 
@@ -97,17 +99,17 @@ export default function Home() {
     <div style={{ background: BG, color: DARK, minHeight: "100vh" }}>
 
       {/* NAV */}
-      <nav className="sticky top-0 z-50 border-b" style={{ background: HERO, borderColor: BORDER }}>
+      <nav className="sticky top-0 z-50" style={{ background: NAV_BG }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>✦ {healer.name}</span></Link>
+          <Link href="/"><span className="font-semibold text-sm cursor-pointer text-white">✦ {healer.name}</span></Link>
           <div className="flex items-center gap-2">
             <a href={waLink} target="_blank" rel="noreferrer">
-              <Button size="sm" className="h-7 text-xs gap-1.5 text-white" style={{ background: GN }}>
+              <Button size="sm" className="h-7 text-xs gap-1.5 text-white" style={{ background: GOLD }}>
                 <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
               </Button>
             </a>
             <Link href={`/${slug}/dashboard`}>
-              <Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#6a5f50" }}>Healer Login</Button>
+              <Button size="sm" variant="ghost" className="h-7 text-xs text-white/80 hover:text-white hover:bg-white/10">Healer Login</Button>
             </Link>
           </div>
         </div>
@@ -167,17 +169,19 @@ export default function Home() {
       </section>
 
       {/* TABS */}
-      <div className="border-b" style={{ borderColor: BORDER, background: BG }}>
-        <div className="max-w-5xl mx-auto px-4 flex">
-          {(["readings", "shop"] as const).map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
-              style={{ borderColor: tab === t ? GN : "transparent", color: tab === t ? GN : "#9a8e7e" }}>
-              {t === "readings" ? `Readings (${readings.length})` : `Shop (${products.length})`}
-            </button>
-          ))}
+      {healer.shopEnabled && (
+        <div className="border-b" style={{ borderColor: BORDER, background: BG }}>
+          <div className="max-w-5xl mx-auto px-4 flex">
+            {(["readings", "shop"] as const).map(t => (
+              <button key={t} onClick={() => setTab(t)}
+                className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+                style={{ borderColor: tab === t ? GN : "transparent", color: tab === t ? GN : "#9a8e7e" }}>
+                {t === "readings" ? `Readings (${readings.length})` : `Shop (${products.length})`}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* CONTENT */}
       <div className="max-w-5xl mx-auto px-4 py-4">
@@ -213,7 +217,7 @@ export default function Home() {
 
                     {isOpen && rows.map((r) => (
                       <div key={r.id}
-                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf7f2] transition-colors"
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#f5efe0] transition-colors"
                         style={{ borderTop: `1px solid #f0ece4`, paddingLeft: 52 }}>
                         <div className="flex-1 min-w-0 flex items-center gap-1.5">
                           <span className="text-sm truncate" style={{ color: DARK }}>{r.name}</span>
@@ -237,7 +241,7 @@ export default function Home() {
           </>
         )}
 
-        {tab === "shop" && (
+        {tab === "shop" && healer.shopEnabled && (
           <>
             {products.length === 0 && <p className="text-sm text-center py-8" style={{ color: "#9a8e7e" }}>No products listed yet.</p>}
             {products.length > 0 && (
@@ -282,8 +286,8 @@ export default function Home() {
         )}
       </div>
 
-      <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
-        <span style={{ color: GN }}>✦ {healer.name}</span>{healer.location ? ` · ${healer.location}` : ""}
+      <footer className="text-center text-xs py-5 mt-4" style={{ background: NAV_BG, color: "#c9bfa8" }}>
+        <span className="text-white">✦ {healer.name}</span>{healer.location ? ` · ${healer.location}` : ""}
       </footer>
 
       <ChatWidget healerName={healer.name} waLink={waLink} />

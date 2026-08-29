@@ -9,9 +9,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { Save, Plus, Trash2, UserCog, Sparkles, ShoppingBag, Loader2 } from "lucide-react";
 import type { Reading, Product, SessionFormat } from "@shared/types";
 
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN     = "#355e4a";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN     = "#2d4a3a";
 const DARK   = "#1c1712";
 const GOLD   = "#a2532e";
 
@@ -30,6 +30,7 @@ interface HealerProfile {
   whatsapp: string;
   avatarUrl: string;
   headerImageUrl: string;
+  shopEnabled: boolean;
   readings: Reading[];
   products: Product[];
 }
@@ -42,7 +43,7 @@ export default function HubSettings({ slug }: { slug: string }) {
     queryKey: [`/api/healers/${slug}`],
   });
 
-  const [profile, setProfile] = useState({ name: "", tagline: "", location: "", whatsapp: "", avatarUrl: "", headerImageUrl: "" });
+  const [profile, setProfile] = useState({ name: "", tagline: "", location: "", whatsapp: "", avatarUrl: "", headerImageUrl: "", shopEnabled: true });
   const [readings, setReadings] = useState<Reading[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [savingProfile, setSavingProfile] = useState(false);
@@ -54,6 +55,7 @@ export default function HubSettings({ slug }: { slug: string }) {
     setProfile({
       name: healer.name || "", tagline: healer.tagline || "", location: healer.location || "",
       whatsapp: healer.whatsapp || "", avatarUrl: healer.avatarUrl || "", headerImageUrl: healer.headerImageUrl || "",
+      shopEnabled: healer.shopEnabled ?? true,
     });
     setReadings(healer.readings || []);
     setProducts(healer.products || []);
@@ -238,6 +240,20 @@ export default function HubSettings({ slug }: { slug: string }) {
           <span className="text-sm font-medium" style={{ color: DARK }}>Shop Products</span>
           <span className="text-xs px-1.5 py-0.5 rounded-full ml-auto" style={{ background: "#f0ece4", color: "#7a6e5e" }}>{products.length}</span>
         </div>
+        <div className="px-4 py-3 border-b bg-white flex items-center justify-between gap-3" style={{ borderColor: "#f0ece4" }}>
+          <label className="flex items-center gap-2 text-sm cursor-pointer" style={{ color: DARK }}>
+            <Checkbox checked={profile.shopEnabled} onCheckedChange={v => setProfile(p => ({ ...p, shopEnabled: !!v }))} />
+            Show a Shop tab on my storefront
+          </label>
+          <Button size="sm" variant="outline" className="h-7 text-xs flex-shrink-0" style={{ borderColor: BORDER, color: GN }} onClick={saveProfile} disabled={savingProfile}>
+            {savingProfile ? "Saving…" : "Save"}
+          </Button>
+        </div>
+        {!profile.shopEnabled && (
+          <p className="text-xs px-4 py-2 bg-white" style={{ color: "#b0a898" }}>
+            Your shop is hidden from visitors. You can still add and edit products below — they just won't be visible until you turn this back on.
+          </p>
+        )}
         <div className="divide-y bg-white" style={{ borderColor: "#f0ece4" }}>
           {products.map((p, i) => (
             <div key={p.id} className="p-4 space-y-2.5">
@@ -263,7 +279,7 @@ export default function HubSettings({ slug }: { slug: string }) {
               </div>
             </div>
           ))}
-          {products.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No products yet — add one below, or leave empty to hide the Shop tab.</p>}
+          {products.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No products yet — add one below.</p>}
         </div>
         <div className="px-4 py-3 bg-white border-t flex items-center gap-2" style={{ borderColor: BORDER }}>
           <Button size="sm" variant="outline" className="gap-1.5" style={{ borderColor: BORDER, color: GN }} onClick={addProduct}>

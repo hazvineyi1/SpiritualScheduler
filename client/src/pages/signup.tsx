@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { apiRequest } from "@/lib/queryClient";
 import { ChevronLeft } from "lucide-react";
 
-const BG     = "#faf7f2";
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN     = "#355e4a";
+const BG     = "#f5efe0";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN     = "#2d4a3a";
 const DARK   = "#1c1712";
 
 export default function Signup() {

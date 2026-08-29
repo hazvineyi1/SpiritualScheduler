@@ -313,9 +313,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/profile", requireHealer, async (req, res) => {
     try {
-      const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl } = req.body;
+      const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled } = req.body;
       if (!name?.trim()) return res.status(400).json({ success: false, error: "Name is required" });
-      const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl });
+      const updated = await storage.updateHealerProfile(req.session.user!.healerId, { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled });
       req.session.user!.name = updated.name;
       res.json({ success: true, data: publicHealer(updated) });
     } catch (err) {

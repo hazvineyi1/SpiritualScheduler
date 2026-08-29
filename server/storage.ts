@@ -65,7 +65,7 @@ export interface IStorage {
   getHealerByEmail(email: string): Promise<Healer | undefined>;
   createHealer(data: InsertHealer): Promise<Healer>;
   listHealers(): Promise<Healer[]>;
-  updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl">>): Promise<Healer>;
+  updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled">>): Promise<Healer>;
   updateHealerCatalog(id: number, readings: Reading[], products: Product[]): Promise<Healer>;
 
   getAppointments(healerId: number): Promise<Appointment[]>;
@@ -81,6 +81,10 @@ export interface IStorage {
   unblockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig>;
   getDaySlots(healerId: number, dateStr: string): Promise<DaySlot[]>;
 }
+
+// A small rotation of nature/heritage images given to new hubs as a starting
+// header photo — each healer can replace it any time from Hub Settings.
+const DEFAULT_HEADER_IMAGES = ["/images/default-header-1.jpg", "/images/default-header-2.jpg", "/images/default-header-3.jpg"];
 
 export class MemStorage implements IStorage {
   private healers: Map<number, Healer>;
@@ -105,6 +109,7 @@ export class MemStorage implements IStorage {
       avatarUrl: "/images/vashava-avatar.jpg",
       headerImageUrl: "/images/eland.jpg",
       zinathaVerified: true,
+      shopEnabled: true,
       readings: [
         { id: 1, name: "Matare/Consultation", category: "Guidance & Consultation", price: 20, description: "Kukurukura namuchembere — a general consultation to discuss whatever is on your mind with VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
         { id: 2, name: "Yes/No Questions", category: "Guidance & Consultation", price: 10, description: "Mibvunzo inoda Hongu kana Kwete — quick, direct answers to yes-or-no questions.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
@@ -152,8 +157,9 @@ export class MemStorage implements IStorage {
       location: data.location ?? "",
       whatsapp: data.whatsapp,
       avatarUrl: "",
-      headerImageUrl: "",
+      headerImageUrl: DEFAULT_HEADER_IMAGES[this.healerIds % DEFAULT_HEADER_IMAGES.length],
       zinathaVerified: false,
+      shopEnabled: true,
       readings: STARTER_READINGS.map((r, i) => ({ ...r, id: i + 1 })),
       products: STARTER_PRODUCTS.map((p, i) => ({ ...p, id: i + 1 })),
       availability: { ...DEFAULT_AVAILABILITY, blockedSlots: [] },
@@ -172,7 +178,7 @@ export class MemStorage implements IStorage {
     return Array.from(this.healers.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  async updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl">>): Promise<Healer> {
+  async updateHealerProfile(id: number, updates: Partial<Pick<Healer, "name" | "tagline" | "location" | "whatsapp" | "avatarUrl" | "headerImageUrl" | "shopEnabled">>): Promise<Healer> {
     const healer = this.healers.get(id);
     if (!healer) throw new NotFoundError("Healer not found");
     const updated = { ...healer, ...updates };

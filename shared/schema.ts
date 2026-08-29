@@ -17,6 +17,7 @@ export const healers = pgTable("healers", {
   avatarUrl: text("avatar_url").notNull().default(""),
   headerImageUrl: text("header_image_url").notNull().default(""),
   zinathaVerified: boolean("zinatha_verified").notNull().default(false),
+  shopEnabled: boolean("shop_enabled").notNull().default(true),
   readings: json("readings").$type<any[]>().notNull().default([]),
   products: json("products").$type<any[]>().notNull().default([]),
   availability: json("availability").$type<AvailabilityConfig>(),

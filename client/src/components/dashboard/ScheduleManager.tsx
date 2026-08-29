@@ -6,9 +6,9 @@ import { apiRequest } from "@/lib/queryClient";
 import { CalendarCog, Loader2, Lock, Save, Check, X } from "lucide-react";
 import type { AvailabilityConfig, DaySlot } from "@shared/schema";
 
-const HERO   = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN      = "#355e4a";
+const HERO   = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN      = "#2d4a3a";
 const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 

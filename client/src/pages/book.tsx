@@ -14,10 +14,10 @@ import ChatWidget from "@/components/ChatWidget";
 
 const FORMAT_LABELS: Record<string, string> = { video: "Video", audio: "Audio", chat: "Live Chat", async: "Async", in_person: "In-Person" };
 const FORMAT_ICONS: Record<string, any> = { video: Video, audio: Mic, chat: MessageSquare, async: Send, in_person: MapPin };
-const BG   = "#faf7f2";
-const HERO = "#f0ead9";
-const BORDER = "#ddd2bc";
-const GN   = "#355e4a";
+const BG   = "#f5efe0";
+const HERO = "#e6d7b3";
+const BORDER = "#c9b896";
+const GN   = "#2d4a3a";
 const DARK = "#1c1712";
 const GOLD = "#a2532e";
 
@@ -156,7 +156,7 @@ export default function Book() {
   if (bookingDone) return (
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="max-w-sm w-full text-center">
-        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border" style={{ background: "#f0ead9", borderColor: `${GN}44` }}>
+        <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border" style={{ background: "#e6d7b3", borderColor: `${GN}44` }}>
           <CheckCircle2 className="h-8 w-8" style={{ color: GN }} />
         </div>
         <h2 className="text-xl font-semibold mb-1" style={{ color: DARK }}>You're in the queue</h2>
@@ -406,7 +406,7 @@ export default function Book() {
                     {proofPreview && <img src={proofPreview} alt="Proof" className="max-h-28 rounded border object-contain" style={{ borderColor: BORDER }} />}
                   </div>
                 ) : (
-                  <button onClick={() => fileRef.current?.click()} className="w-full rounded-lg border-2 border-dashed p-5 text-center transition-colors hover:border-[#355e4a]" style={{ borderColor: BORDER }}>
+                  <button onClick={() => fileRef.current?.click()} className="w-full rounded-lg border-2 border-dashed p-5 text-center transition-colors hover:border-[#2d4a3a]" style={{ borderColor: BORDER }}>
                     <Upload className="h-5 w-5 mx-auto mb-1.5" style={{ color: "#c0b8a8" }} />
                     <p className="text-sm" style={{ color: "#9a8e7e" }}>Upload screenshot or PDF receipt</p>
                     <p className="text-xs mt-0.5" style={{ color: "#c0b8a8" }}>JPG, PNG or PDF · max 5 MB</p>
