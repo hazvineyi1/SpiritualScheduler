@@ -70,8 +70,8 @@ export default function ChatWidget() {
             </button>
           </div>
 
-          {/* Messages */}
-          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2" style={{ minHeight: 180 }}>
+          {/* Scrollable content: messages + quick questions, so the footer below always stays visible */}
+          <div ref={scrollRef} className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
                 <div
@@ -84,38 +84,38 @@ export default function ChatWidget() {
                 </div>
               </div>
             ))}
+
+            {/* Quick questions */}
+            <div className="flex flex-wrap gap-1.5 pt-2" style={{ borderTop: `1px solid ${BORDER}` }}>
+              {FAQS.map((f, i) => (
+                <button
+                  key={i}
+                  onClick={() => askFaq(i)}
+                  disabled={askedIds.has(i)}
+                  className="text-[11px] px-2.5 py-1 rounded-full border transition-colors disabled:opacity-40 disabled:cursor-default hover:bg-[#f5f1eb]"
+                  style={{ borderColor: BORDER, color: DARK }}
+                >
+                  {f.q}
+                </button>
+              ))}
+              {askedIds.size === FAQS.length && (
+                <button
+                  onClick={resetChat}
+                  className="text-[11px] px-2.5 py-1 rounded-full border transition-colors hover:bg-[#f5f1eb]"
+                  style={{ borderColor: BORDER, color: "#9a8e7e" }}
+                >
+                  ↺ Start over
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Quick questions */}
-          <div className="px-3 pb-2 flex flex-wrap gap-1.5" style={{ borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
-            {FAQS.map((f, i) => (
-              <button
-                key={i}
-                onClick={() => askFaq(i)}
-                disabled={askedIds.has(i)}
-                className="text-[11px] px-2.5 py-1 rounded-full border transition-colors disabled:opacity-40 disabled:cursor-default hover:bg-[#f5f1eb]"
-                style={{ borderColor: BORDER, color: DARK }}
-              >
-                {f.q}
-              </button>
-            ))}
-            {askedIds.size === FAQS.length && (
-              <button
-                onClick={resetChat}
-                className="text-[11px] px-2.5 py-1 rounded-full border transition-colors hover:bg-[#f5f1eb]"
-                style={{ borderColor: BORDER, color: "#9a8e7e" }}
-              >
-                ↺ Start over
-              </button>
-            )}
-          </div>
-
-          {/* WhatsApp fallback */}
+          {/* WhatsApp fallback — always pinned at the bottom */}
           <a
             href={`${WA_LINK}?text=${encodeURIComponent("Hi VaShava! I have a question.")}`}
             target="_blank"
             rel="noreferrer"
-            className="flex items-center justify-center gap-1.5 text-xs font-medium py-2.5 text-white"
+            className="flex-shrink-0 flex items-center justify-center gap-1.5 text-xs font-medium py-2.5 text-white"
             style={{ background: GN }}
           >
             <Send className="h-3.5 w-3.5" /> Message VaShava on WhatsApp
