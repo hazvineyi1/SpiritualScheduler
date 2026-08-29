@@ -1,24 +1,47 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
-import { ComposableMap, Geographies, Geography } from "react-simple-maps";
+import { ComposableMap, Geographies, Geography, Sphere, Graticule } from "react-simple-maps";
 import { Button } from "@/components/ui/button";
 import { AFRICAN_COUNTRIES } from "@shared/countries";
 
 const COUNTRY_NAME_BY_SLUG = Object.fromEntries(AFRICAN_COUNTRIES.map(c => [c.slug, c.name]));
 
-const BG      = "#f5efe0";
-const DARK    = "#1c1712";
-const BORDER  = "#c9b896";
-const BROWN   = "#8a6a45";
-const BROWN_DARK = "#6b5233";
-const GOLD    = "#c9a227";
-const STROKE  = "#f5efe0";
+const BG          = "#f5efe0";
+const DARK        = "#1c1712";
+const BORDER      = "#c9b896";
+const BROWN       = "#8a6a45";
+const BROWN_DARK  = "#6b5233";
+const GOLD        = "#c9a227";
+const STROKE      = "#f5efe0";
+const OCEAN       = "#2b2013";
 
 const GEO_URL = "/data/africa.json";
+
+// Roughly centers the globe on Africa: [longitude, latitude, roll], negated
+// per d3-geo's rotation convention.
+const AFRICA_CENTER: [number, number, number] = [-20, -3, 0];
+const DEGREES_PER_SECOND = 3; // slow, stately rotation
 
 export default function AfricaMap() {
   const [, navigate] = useLocation();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [lambda, setLambda] = useState(AFRICA_CENTER[0]);
+  const paused = useRef(false);
+  const frame = useRef<number>();
+
+  useEffect(() => {
+    let last = performance.now();
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+      if (!paused.current) {
+        setLambda(l => l + DEGREES_PER_SECOND * dt);
+      }
+      frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+    return () => { if (frame.current) cancelAnimationFrame(frame.current); };
+  }, []);
 
   return (
     <div style={{ background: BG, color: DARK, minHeight: "100vh" }}>
@@ -41,15 +64,21 @@ export default function AfricaMap() {
         </p>
       </section>
 
-      {/* MAP */}
-      <div className="max-w-3xl mx-auto px-4 pb-4">
+      {/* GLOBE */}
+      <div
+        className="max-w-2xl mx-auto px-4 pb-4"
+        onMouseEnter={() => { paused.current = true; }}
+        onMouseLeave={() => { paused.current = false; setHovered(null); }}
+      >
         <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{ center: [22, 2], scale: 420 }}
+          projection="geoOrthographic"
+          projectionConfig={{ scale: 340, rotate: [lambda, AFRICA_CENTER[1], AFRICA_CENTER[2]] }}
           width={800}
           height={800}
           style={{ width: "100%", height: "auto" }}
         >
+          <Sphere id="globe-sphere" fill={OCEAN} stroke={GOLD} strokeWidth={1.25} />
+          <Graticule stroke="#ffffff" strokeWidth={0.3} style={{ opacity: 0.08 }} />
           <Geographies geography={GEO_URL}>
             {({ geographies }) =>
               geographies.map((geo) => {
@@ -64,7 +93,7 @@ export default function AfricaMap() {
                     onClick={() => navigate(`/country/${name}`)}
                     fill={isHovered ? GOLD : BROWN}
                     stroke={STROKE}
-                    strokeWidth={0.75}
+                    strokeWidth={0.5}
                     style={{ outline: "none", cursor: "pointer", transition: "fill 120ms ease" }}
                   />
                 );
