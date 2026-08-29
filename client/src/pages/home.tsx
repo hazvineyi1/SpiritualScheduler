@@ -101,7 +101,7 @@ export default function Home() {
       {/* NAV */}
       <nav className="sticky top-0 z-50" style={{ background: NAV_BG }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <Link href="/"><span className="font-semibold text-sm cursor-pointer text-white">✦ {healer.name}</span></Link>
+          <Link href={`/${slug}`}><span className="font-semibold text-sm cursor-pointer text-white">✦ {healer.name}</span></Link>
           <div className="flex items-center gap-2">
             <a href={waLink} target="_blank" rel="noreferrer">
               <Button size="sm" className="h-7 text-xs gap-1.5 text-white" style={{ background: GOLD }}>
