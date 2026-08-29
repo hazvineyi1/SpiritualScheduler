@@ -1,7 +1,8 @@
 import {
   type Healer, type InsertHealer, type Appointment, type InsertAppointment,
   type AvailabilityConfig, type UpdateAvailability, type DaySlot, type SlotStatus,
-  healers as healersTable, appointments as appointmentsTable,
+  type Lead, type InsertLead,
+  healers as healersTable, appointments as appointmentsTable, leads as leadsTable,
 } from "@shared/schema";
 import { STARTER_READINGS, STARTER_PRODUCTS, type Reading, type Product } from "@shared/types";
 import { db, ensureSchema } from "./db";
@@ -88,6 +89,10 @@ export interface IStorage {
   blockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig>;
   unblockSlot(healerId: number, datetime: string): Promise<AvailabilityConfig>;
   getDaySlots(healerId: number, dateStr: string): Promise<DaySlot[]>;
+
+  // Interest form leads — entirely separate from healers; no login, no hub.
+  createLead(data: InsertLead): Promise<Lead>;
+  listLeads(): Promise<Lead[]>;
 }
 
 // A small rotation of nature/heritage images given to new hubs as a starting
@@ -97,8 +102,10 @@ const DEFAULT_HEADER_IMAGES = ["/images/default-header-1.jpg", "/images/default-
 export class MemStorage implements IStorage {
   private healers: Map<number, Healer>;
   private appointments: Map<number, Appointment>;
+  private leads: Map<number, Lead> = new Map();
   private healerIds = 1;
   private appointmentIds = 1;
+  private leadIds = 1;
 
   constructor() {
     this.healers = new Map();
@@ -181,6 +188,12 @@ export class MemStorage implements IStorage {
     for (const row of aptRows) {
       this.appointments.set(row.id, row as Appointment);
       this.appointmentIds = Math.max(this.appointmentIds, row.id + 1);
+    }
+
+    const leadRows = await db.select().from(leadsTable);
+    for (const row of leadRows) {
+      this.leads.set(row.id, row as Lead);
+      this.leadIds = Math.max(this.leadIds, row.id + 1);
     }
   }
 
@@ -459,6 +472,31 @@ export class MemStorage implements IStorage {
       slots.push({ datetime: iso, label: slotLabel(hour, minute), status });
     }
     return slots;
+  }
+
+  // ---- Interest form leads --------------------------------------------
+  async createLead(data: InsertLead): Promise<Lead> {
+    const base = {
+      name: data.name,
+      contact: data.contact,
+      country: data.country ?? "",
+      message: data.message ?? "",
+      createdAt: new Date().toISOString(),
+    };
+    let lead: Lead;
+    if (db) {
+      const [row] = await db.insert(leadsTable).values(base).returning();
+      lead = row as Lead;
+    } else {
+      lead = { id: this.leadIds++, ...base };
+    }
+    this.leads.set(lead.id, lead);
+    this.leadIds = Math.max(this.leadIds, lead.id + 1);
+    return lead;
+  }
+
+  async listLeads(): Promise<Lead[]> {
+    return Array.from(this.leads.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }
 

@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SlotUnavailableError, NotFoundError } from "./storage";
-import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema } from "@shared/schema";
+import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema, insertLeadSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import type { Request, Response, NextFunction } from "express";
 
@@ -78,6 +78,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: "Failed to create hub" });
     }
   });
+
+  // ---- Interest form leads --------------------------------------------------
+  // Public: anyone can leave their details to be contacted later. No login,
+  // no hub created — kept entirely separate from real healer accounts.
+  app.post("/api/leads", async (req, res) => {
+    try {
+      const data = insertLeadSchema.parse(req.body);
+      const lead = await storage.createLead(data);
+      res.json({ success: true, data: lead });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
+      }
+      res.status(500).json({ success: false, error: "Failed to submit" });
+    }
+  });
+
+  // Admin-only: lists submitted leads. Protected by a shared key rather than
+  // the healer login system, since this isn't a healer-facing feature.
+  app.get("/api/leads", async (req, res) => {
+    const key = req.header("x-admin-key");
+    const expected = process.env.ADMIN_KEY || "vashava-admin-2026";
+    if (!key || key !== expected) {
+      return res.status(401).json({ success: false, error: "Invalid admin key" });
+    }
+    try {
+      const leads = await storage.listLeads();
+      res.json({ success: true, data: leads });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch leads" });
+    }
+  });
+
 
   // ---- Public booking (scoped to one healer via slug) ---------------------
   app.get("/api/healers/:slug/availability", async (req, res) => {

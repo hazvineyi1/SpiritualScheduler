@@ -1,8 +1,13 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
 import {
   MessageCircle, CalendarCheck, ShieldCheck, Wallet, Clock,
-  CheckCircle2, XCircle, ArrowRight, Lock,
+  CheckCircle2, XCircle, ArrowRight, Lock, Gift,
 } from "lucide-react";
 
 const BG      = "#f5efe0";
@@ -13,8 +18,34 @@ const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 
 export default function ForHealers() {
+  const [form, setForm] = useState({ name: "", contact: "", country: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleInterestSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setSubmitting(true);
+    try {
+      const res = await apiRequest("POST", "/api/leads", form);
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Something went wrong");
+      setSubmitted(true);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div style={{ background: BG, color: DARK }}>
+      {/* SEPTEMBER PROMO BANNER */}
+      <div className="text-center text-xs sm:text-sm font-medium py-2 px-4 text-white" style={{ background: GOLD }}>
+        🎁 Sign up in September and get your first 3 months completely free.
+      </div>
+
       {/* NAV */}
       <nav className="border-b sticky top-0 z-40 bg-white/90 backdrop-blur" style={{ borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -43,7 +74,7 @@ export default function ForHealers() {
             <Button variant="outline" className="h-11 px-6 text-sm" style={{ borderColor: BORDER, color: DARK }}>See a hub in action</Button>
           </Link>
         </div>
-        <p className="text-xs mt-4" style={{ color: "#9a8e7e" }}>No setup fees. Your hub, your prices, your schedule.</p>
+        <p className="text-xs mt-4" style={{ color: "#9a8e7e" }}>No setup fees. Your hub, your prices, your schedule. <span style={{ color: GOLD, fontWeight: 600 }}>Sign up in September for 3 months free.</span></p>
       </section>
 
       {/* CHAOS vs CALM — the signature contrast */}
@@ -183,10 +214,55 @@ export default function ForHealers() {
         </div>
       </section>
 
+      {/* INTEREST FORM */}
+      <section className="max-w-lg mx-auto px-4 pb-16">
+        <div className="rounded-2xl border bg-white p-6 sm:p-8" style={{ borderColor: BORDER }}>
+          {submitted ? (
+            <div className="text-center py-6">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-3" style={{ color: GN }} />
+              <h3 className="text-lg font-semibold mb-1.5" style={{ color: DARK }}>Thank you — you're on our list.</h3>
+              <p className="text-sm" style={{ color: "#6b5f4a" }}>We'll reach out with details soon. In the meantime, you're welcome to <Link href="/signup"><span className="underline cursor-pointer" style={{ color: GN }}>create your free hub</span></Link> right away.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 mb-1">
+                <Gift className="h-4 w-4" style={{ color: GOLD }} />
+                <h2 className="text-lg font-semibold" style={{ color: DARK }}>Not ready yet? Just tell us you're interested.</h2>
+              </div>
+              <p className="text-xs mb-5" style={{ color: "#6b5f4a" }}>
+                Leave your details and we'll reach out — no commitment, and no hub is created until you're ready.
+              </p>
+              <form onSubmit={handleInterestSubmit} className="space-y-3">
+                <div>
+                  <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Your name</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Mbuya Nyasha" required />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>WhatsApp number or email</Label>
+                  <Input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} placeholder="263771234567 or you@example.com" required />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Country (optional)</Label>
+                  <Input value={form.country} onChange={e => setForm(f => ({ ...f, country: e.target.value }))} placeholder="e.g. Zimbabwe" />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Anything you'd like us to know? (optional)</Label>
+                  <Textarea value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="e.g. what you practice, questions you have" rows={3} />
+                </div>
+                {error && <p className="text-xs" style={{ color: "#b05050" }}>{error}</p>}
+                <Button type="submit" className="w-full text-white" style={{ background: GN }} disabled={submitting}>
+                  {submitting ? "Sending…" : "I'm Interested"}
+                </Button>
+              </form>
+            </>
+          )}
+        </div>
+      </section>
+
       {/* FINAL CTA */}
       <section className="text-center py-16 px-4" style={{ background: GN }}>
         <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-3">Give your practice room to breathe.</h2>
-        <p className="text-sm mb-7" style={{ color: "#c9d6cc" }}>Free to list. Set up in minutes. Your first client could book today.</p>
+        <p className="text-sm mb-7" style={{ color: "#c9d6cc" }}>Free to list. Set up in minutes. Sign up in September and your first 3 months are free.</p>
         <Link href="/signup">
           <Button className="h-11 px-8 text-sm" style={{ background: "white", color: GN }}>Create Your Free Hub</Button>
         </Link>

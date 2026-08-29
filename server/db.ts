@@ -58,5 +58,13 @@ export async function ensureSchema() {
     );
     CREATE INDEX IF NOT EXISTS idx_appointments_healer_id ON appointments (healer_id);
     ALTER TABLE healers ADD COLUMN IF NOT EXISTS country TEXT NOT NULL DEFAULT '';
+    CREATE TABLE IF NOT EXISTS leads (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      contact TEXT NOT NULL,
+      country TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL
+    );
   `);
 }

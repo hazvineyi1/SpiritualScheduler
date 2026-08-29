@@ -105,3 +105,26 @@ export interface DaySlot {
   label: string;    // e.g. "09:00"
   status: SlotStatus;
 }
+
+// ---- Interest form leads --------------------------------------------------
+// Healers who aren't ready for a full hub yet can leave their details to be
+// contacted later. Kept entirely separate from the healers table — a lead
+// has no login, no hub, nothing public.
+export const leads = pgTable("leads", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  contact: text("contact").notNull(),
+  country: text("country").notNull().default(""),
+  message: text("message").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertLeadSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  contact: z.string().min(5, "Please share a WhatsApp number or email"),
+  country: z.string().optional(),
+  message: z.string().optional(),
+});
+
+export type Lead = typeof leads.$inferSelect;
+export type InsertLead = z.infer<typeof insertLeadSchema>;
