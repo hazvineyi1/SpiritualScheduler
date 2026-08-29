@@ -7,7 +7,6 @@ const BG      = "#f5efe0";
 const HERO    = "#e6d7b3";
 const BORDER  = "#c9b896";
 const GN      = "#2d4a3a";
-const NAV_BG  = "#1f3d2e";
 const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 
@@ -31,11 +30,11 @@ export default function Directory() {
   return (
     <div style={{ background: BG, color: DARK, minHeight: "100vh" }}>
       {/* NAV */}
-      <nav style={{ background: NAV_BG }}>
+      <nav className="border-b" style={{ background: HERO, borderColor: BORDER }}>
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
-          <span className="font-semibold text-sm tracking-wide text-white">✦ African Spiritual Hub</span>
+          <span className="font-semibold text-sm tracking-wide" style={{ color: DARK }}>✦ African Spiritual Hub</span>
           <Link href="/signup">
-            <Button size="sm" className="h-7 text-xs text-white" style={{ background: GOLD }}>List Your Practice</Button>
+            <Button size="sm" className="h-7 text-xs text-white" style={{ background: GN }}>List Your Practice</Button>
           </Link>
         </div>
       </nav>
@@ -48,7 +47,7 @@ export default function Directory() {
           className="absolute inset-0 w-full h-full object-cover"
           style={{ objectPosition: "62% 32%" }}
         />
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(31,61,46,0.25) 0%, rgba(28,23,18,0.35) 55%, rgba(20,17,12,0.88) 100%)" }} />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(28,23,18,0.05) 0%, rgba(28,23,18,0.35) 55%, rgba(20,17,12,0.88) 100%)" }} />
         <div className="relative h-full flex flex-col items-center justify-end text-center px-4 pb-12">
           <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: "#e3b98a" }}>Rooted in tradition</p>
           <h1 className="text-3xl sm:text-5xl font-semibold mb-3 text-white">African Spiritual Hub</h1>
@@ -110,8 +109,8 @@ export default function Directory() {
         </div>
       </div>
 
-      <footer className="text-center text-xs py-6" style={{ background: NAV_BG, color: "#c9bfa8" }}>
-        <span className="text-white">✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
+      <footer className="text-center text-xs py-6 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
+        <span style={{ color: GN }}>✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
       </footer>
     </div>
   );
