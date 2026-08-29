@@ -242,6 +242,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wipes all appointment data. Healer-only — used by the "Reset Data" control
+  // in the dashboard to clear test/demo bookings.
+  app.post("/api/appointments/reset-all", requireHealer, async (req, res) => {
+    try {
+      storage.resetAppointments();
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to reset data" });
+    }
+  });
+
   // Auth
   app.post("/api/auth/login", async (req, res) => {
     try {

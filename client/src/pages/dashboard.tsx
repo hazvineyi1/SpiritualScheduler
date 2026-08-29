@@ -11,7 +11,7 @@ import type { Appointment } from "@shared/schema";
 import { FORMAT_LABELS } from "@shared/types";
 import {
   CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List,
-  LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock,
+  LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock, Trash2,
 } from "lucide-react";
 import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
@@ -332,6 +332,27 @@ export default function Dashboard() {
   });
 
   const act = (id: number, action: string) => mutate.mutate({ id, action });
+
+  const resetData = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/appointments/reset-all", {});
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "Reset failed");
+      return json;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["/api/appointments"] });
+      toast({ title: "Data reset", description: "All bookings have been cleared." });
+    },
+    onError: (err: Error) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+  });
+
+  const handleResetData = () => {
+    if (window.confirm("Reset all booking data? This permanently clears every appointment shown in this dashboard and cannot be undone.")) {
+      resetData.mutate();
+    }
+  };
+
   const startSession = (apt: Appointment) => {
     const link = clientWaLink(apt, startMessage(apt));
     if (link) window.open(link, "_blank");
@@ -411,6 +432,9 @@ export default function Dashboard() {
           <span className="text-sm font-semibold" style={{ color: GN }}>✦ VaShava's Dashboard</span>
           <div className="flex items-center gap-1">
             <Link href="/"><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#a03030" }} onClick={handleResetData} disabled={resetData.isPending}>
+              <Trash2 className="h-3.5 w-3.5" /> {resetData.isPending ? "Resetting…" : "Reset Data"}
+            </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#9a8e7e" }} onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogOut className="h-3.5 w-3.5" /> Logout
             </Button>

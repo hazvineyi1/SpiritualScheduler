@@ -5,6 +5,7 @@ import type { ReadingCategory } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Clock, Shield, MessageCircle, Search, ChevronDown, ChevronRight } from "lucide-react";
+import ChatWidget from "@/components/ChatWidget";
 
 const CAT_ICON: Record<string, string> = {
   love_relationships: "💕",
@@ -166,6 +167,8 @@ export default function Home() {
       <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
         <span style={{ color: GN }}>✦ VaShava</span> · Harare, Zimbabwe · Worldwide
       </footer>
+
+      <ChatWidget />
     </div>
   );
 }

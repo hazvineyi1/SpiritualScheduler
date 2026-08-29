@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { ChevronLeft, CheckCircle2, Video, Mic, MessageSquare, Send, MapPin, Upload, FileImage, Phone, CreditCard, MessageCircle } from "lucide-react";
 import BookingCalendar from "@/components/calendar/BookingCalendar";
+import ChatWidget from "@/components/ChatWidget";
 
 const FORMAT_ICONS: Record<string, any> = { video: Video, audio: Mic, chat: MessageSquare, async: Send, in_person: MapPin };
 const BG   = "#ffffff";
@@ -404,6 +405,8 @@ export default function Book() {
           </div>
         )}
       </div>
+
+      <ChatWidget />
     </div>
   );
 }
