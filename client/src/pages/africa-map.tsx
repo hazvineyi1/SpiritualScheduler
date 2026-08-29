@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { ComposableMap, Geographies } from "react-simple-maps";
 import { geoCentroid, geoArea, type GeoProjection } from "d3-geo";
 import { Button } from "@/components/ui/button";
 
-const DARK    = "#1c1712";
-const BORDER  = "#c9b896";
+const DARK         = "#1c1712";
+const BORDER       = "#c9b896";
 const BRONZE_DARK  = "#5c3d20";
 const ACCENT_TEXT  = "#a2622f";
 
@@ -17,20 +17,21 @@ const TEXTURE_URL = "/images/bronze-texture.png";
 // while every country still sits exactly where it geographically belongs.
 const FRAGMENT_SHRINK = 0.8;
 
-// Uniform label styling — every label is the same size; a name is only
-// shown if it both fits inside its own (now smaller) fragment AND doesn't
-// collide with another already-placed label.
-const LABEL_FONT_SIZE = 6.5;
+// Every country gets a label at this one uniform size. If it fits inside
+// its own fragment with no collision, it sits directly on the country;
+// otherwise it's pushed outward (away from the continent's center) with a
+// thin leader line back to the country it names.
+const LABEL_FONT_SIZE = 7;
 const LABEL_PADDING = 1.5;
-const CHAR_WIDTH_FACTOR = 0.56; // rough average glyph width at this font
+const CHAR_WIDTH_FACTOR = 0.56;
 
-const MIN_AREA_FOR_LABEL = 0.00035;
+// A gentle side-to-side 3D tilt (not a full spin) — the map is flat, but
+// this keeps a genuine sense of depth and motion. Paused while hovered.
+const TILT_DEGREES = 8;
+const TILT_PERIOD_MS = 22000;
 
 type Point = [number, number];
 
-// Projects a geometry's rings and shrinks every point toward `center` by
-// `scale`. Returns the SVG path string plus the shrunk shape's own bounding
-// box, so callers can check whether a label actually fits inside it.
 function buildFragment(geometry: any, projection: GeoProjection, center: Point, scale: number) {
   const shrink = (lonLat: Point): Point | null => {
     const p = projection(lonLat);
@@ -57,39 +58,90 @@ function buildFragment(geometry: any, projection: GeoProjection, center: Point, 
   return { d, bbox };
 }
 
-interface LabelCandidate {
-  key: string;
+interface PlacedLabel {
+  slug: string;
   name: string;
   x: number;
   y: number;
   width: number;
+  external: boolean;
+  from?: Point;
 }
 
-// Greedy label placement: biggest countries get first claim on the space;
-// anything whose box would overlap an already-placed label is skipped
-// entirely, so every label that IS shown is fully clear at the same size.
-function placeLabels(candidates: LabelCandidate[]): Set<string> {
-  const placed: { x: number; y: number; width: number }[] = [];
-  const kept = new Set<string>();
-  for (const c of candidates) {
-    const halfW = c.width / 2 + LABEL_PADDING;
-    const halfH = LABEL_FONT_SIZE / 2 + LABEL_PADDING;
-    const overlaps = placed.some(p => {
-      const pHalfW = p.width / 2 + LABEL_PADDING;
-      const pHalfH = LABEL_FONT_SIZE / 2 + LABEL_PADDING;
-      return Math.abs(c.x - p.x) < halfW + pHalfW && Math.abs(c.y - p.y) < halfH + pHalfH;
-    });
-    if (!overlaps) {
-      placed.push({ x: c.x, y: c.y, width: c.width });
-      kept.add(c.key);
+function boxesOverlap(ax: number, ay: number, aw: number, bx: number, by: number, bw: number): boolean {
+  const halfH = LABEL_FONT_SIZE / 2 + LABEL_PADDING;
+  return Math.abs(ax - bx) < aw / 2 + bw / 2 + LABEL_PADDING * 2 && Math.abs(ay - by) < halfH * 2;
+}
+
+// Every country gets a label. Bigger countries claim their own space first;
+// anything that doesn't fit its own fragment, or loses a collision, is
+// pushed outward along the line from the continent's center through the
+// country, trying increasing distances until it finds clear space — with a
+// thin line drawn back to the country so it's still obvious which is which.
+function placeAllLabels(
+  fragments: { slug: string; name: string; area: number; centroid: Point | null; bbox: { width: number; height: number } | null }[],
+  mapCenter: Point,
+): PlacedLabel[] {
+  const placed: PlacedLabel[] = [];
+  const ordered = fragments
+    .filter(f => f.centroid)
+    .sort((a, b) => b.area - a.area);
+
+  for (const f of ordered) {
+    const [cx, cy] = f.centroid!;
+    const width = f.name.length * LABEL_FONT_SIZE * CHAR_WIDTH_FACTOR;
+    const fitsOwnBox = !!f.bbox && width <= f.bbox.width * 0.92 && LABEL_FONT_SIZE <= f.bbox.height * 0.85;
+
+    if (fitsOwnBox && !placed.some(p => boxesOverlap(cx, cy, width, p.x, p.y, p.width))) {
+      placed.push({ slug: f.slug, name: f.name, x: cx, y: cy, width, external: false });
+      continue;
+    }
+
+    const angle = Math.atan2(cy - mapCenter[1], cx - mapCenter[0]) || 0;
+    let done = false;
+    for (let dist = 16; dist <= 110; dist += 9) {
+      const ex = cx + Math.cos(angle) * dist;
+      const ey = cy + Math.sin(angle) * dist;
+      if (!placed.some(p => boxesOverlap(ex, ey, width, p.x, p.y, p.width))) {
+        placed.push({ slug: f.slug, name: f.name, x: ex, y: ey, width, external: true, from: [cx, cy] });
+        done = true;
+        break;
+      }
+    }
+    if (!done) {
+      const dist = 110;
+      const ex = cx + Math.cos(angle) * dist;
+      const ey = cy + Math.sin(angle) * dist;
+      placed.push({ slug: f.slug, name: f.name, x: ex, y: ey, width, external: true, from: [cx, cy] });
     }
   }
-  return kept;
+  return placed;
 }
 
 export default function AfricaMap() {
   const [, navigate] = useLocation();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [tilt, setTilt] = useState(0);
+  const paused = useRef(false);
+  const frame = useRef<number>();
+  const pauseOffset = useRef(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    let lastElapsed = 0;
+    const tick = (now: number) => {
+      if (!paused.current) {
+        lastElapsed = now - start - pauseOffset.current;
+        const phase = (lastElapsed % TILT_PERIOD_MS) / TILT_PERIOD_MS;
+        setTilt(TILT_DEGREES * Math.sin(phase * Math.PI * 2));
+      } else {
+        pauseOffset.current = now - start - lastElapsed;
+      }
+      frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+    return () => { if (frame.current) cancelAnimationFrame(frame.current); };
+  }, []);
 
   return (
     <div style={{ background: "#f5efe0", color: DARK, minHeight: "100vh" }}>
@@ -112,93 +164,112 @@ export default function AfricaMap() {
         </p>
       </section>
 
-      {/* MAP — flat, no globe/circle; only the countries themselves carry the 3D look */}
-      <div className="max-w-5xl mx-auto px-4 pb-4">
-        <ComposableMap
-          projection="geoMercator"
-          projectionConfig={{ center: [21, 2], scale: 520 }}
-          width={800}
-          height={800}
-          style={{ width: "100%", height: "auto" }}
-        >
-          <defs>
-            <pattern id="bronzeTexture" patternUnits="userSpaceOnUse" x="0" y="0" width="760" height="700">
-              <image href={TEXTURE_URL} x="0" y="0" width="760" height="700" preserveAspectRatio="none" />
-            </pattern>
-            <filter id="fragmentShadow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="2" stdDeviation="2.2" floodColor="#2e1f0f" floodOpacity="0.65" />
-            </filter>
-          </defs>
+      {/* MAP — flat, no globe/circle; only the countries carry the 3D look,
+          with a gentle 3D tilt on the whole map for a sense of motion */}
+      <div
+        className="max-w-5xl mx-auto px-4 pb-4"
+        style={{ perspective: 1600 }}
+        onMouseEnter={() => { paused.current = true; }}
+        onMouseLeave={() => { paused.current = false; setHovered(null); }}
+      >
+        <div style={{ transform: `rotateY(${tilt}deg)`, transformStyle: "preserve-3d" }}>
+          <ComposableMap
+            projection="geoMercator"
+            projectionConfig={{ center: [21, 4], scale: 480 }}
+            width={800}
+            height={840}
+            style={{ width: "100%", height: "auto" }}
+          >
+            <defs>
+              <pattern id="bronzeTexture" patternUnits="userSpaceOnUse" x="0" y="0" width="760" height="700">
+                <image href={TEXTURE_URL} x="0" y="0" width="760" height="700" preserveAspectRatio="none" />
+              </pattern>
+              <filter id="fragmentShadow" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="2" stdDeviation="2.2" floodColor="#2e1f0f" floodOpacity="0.65" />
+              </filter>
+            </defs>
 
-          <Geographies geography={GEO_URL}>
-            {({ geographies, projection }) => {
-              // First pass: shrink every country toward its own centroid,
-              // capturing both the fragment path and its own bounding box.
-              const fragments = geographies.map((geo) => {
-                const slug = geo.properties!.slug as string;
-                const name = geo.properties!.name as string;
-                const area = geoArea(geo as any);
-                const centroid = projection(geoCentroid(geo as any) as Point);
-                const center: Point = centroid ?? [400, 400];
-                const { d, bbox } = buildFragment(geo.geometry, projection, center, FRAGMENT_SHRINK);
-                return { geo, slug, name, area, centroid, d, bbox };
-              });
+            <Geographies geography={GEO_URL}>
+              {({ geographies, projection }) => {
+                const fragments = geographies.map((geo) => {
+                  const slug = geo.properties!.slug as string;
+                  const name = geo.properties!.name as string;
+                  const area = geoArea(geo as any);
+                  const centroid = projection(geoCentroid(geo as any) as Point);
+                  const center: Point = centroid ?? [400, 420];
+                  const { d, bbox } = buildFragment(geo.geometry, projection, center, FRAGMENT_SHRINK);
+                  return { geo, slug, name, area, centroid, d, bbox };
+                });
 
-              // A label is only a candidate if it fits inside its own
-              // fragment's bounding box — otherwise it's dropped before
-              // collision checking even runs.
-              const candidates: LabelCandidate[] = fragments
-                .filter(f => f.centroid && f.area > MIN_AREA_FOR_LABEL && f.bbox)
-                .map(f => ({ ...f, width: f.name.length * LABEL_FONT_SIZE * CHAR_WIDTH_FACTOR }))
-                .filter(f => f.width <= f.bbox!.width * 0.92 && LABEL_FONT_SIZE <= f.bbox!.height * 0.85)
-                .map(f => ({ key: f.slug, name: f.name, x: f.centroid![0], y: f.centroid![1], width: f.width }))
-                .sort((a, b) => b.width - a.width);
-              const visibleLabels = placeLabels(candidates);
+                const validCentroids = fragments.map(f => f.centroid).filter((p): p is Point => p !== null);
+                const mapCenter: Point = validCentroids.length
+                  ? [
+                      validCentroids.reduce((s, p) => s + p[0], 0) / validCentroids.length,
+                      validCentroids.reduce((s, p) => s + p[1], 0) / validCentroids.length,
+                    ]
+                  : [400, 420];
 
-              return fragments.map(({ geo, slug, name, centroid, d }) => {
-                const isHovered = hovered === slug;
+                const labels = placeAllLabels(fragments, mapCenter);
+                const labelBySlug = new Map(labels.map(l => [l.slug, l]));
+
                 return (
-                  <g key={geo.rsmKey}>
-                    <path
-                      d={d}
-                      onMouseEnter={() => setHovered(slug)}
-                      onMouseLeave={() => setHovered(null)}
-                      onClick={() => navigate(`/country/${slug}`)}
-                      fill="url(#bronzeTexture)"
-                      stroke="#2e1f0f"
-                      strokeWidth={isHovered ? 1.1 : 0.7}
-                      filter="url(#fragmentShadow)"
-                      style={{ outline: "none", cursor: "pointer" }}
-                    />
-                    {isHovered && (
-                      <path d={d} fill="#ffffff" opacity={0.22} style={{ pointerEvents: "none" }} />
-                    )}
-                    {visibleLabels.has(slug) && centroid && (
-                      <text
-                        x={centroid[0]}
-                        y={centroid[1]}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        style={{
-                          fontSize: LABEL_FONT_SIZE,
-                          fontWeight: 600,
-                          fill: "#241a0d",
-                          pointerEvents: "none",
-                          paintOrder: "stroke",
-                          stroke: "#f5e9c8",
-                          strokeWidth: 1.6,
-                          strokeLinejoin: "round",
-                        }}
-                      >
-                        {name}
-                      </text>
-                    )}
-                  </g>
+                  <>
+                    {fragments.map(({ geo, slug, d }) => {
+                      const isHovered = hovered === slug;
+                      return (
+                        <g key={geo.rsmKey}>
+                          <path
+                            d={d}
+                            onMouseEnter={() => setHovered(slug)}
+                            onMouseLeave={() => setHovered(null)}
+                            onClick={() => navigate(`/country/${slug}`)}
+                            fill="url(#bronzeTexture)"
+                            stroke="#2e1f0f"
+                            strokeWidth={isHovered ? 1.1 : 0.7}
+                            filter="url(#fragmentShadow)"
+                            style={{ outline: "none", cursor: "pointer" }}
+                          />
+                          {isHovered && (
+                            <path d={d} fill="#ffffff" opacity={0.22} style={{ pointerEvents: "none" }} />
+                          )}
+                        </g>
+                      );
+                    })}
+                    {labels.map(l => (
+                      <g key={`label-${l.slug}`}>
+                        {l.external && l.from && (
+                          <line
+                            x1={l.from[0]} y1={l.from[1]} x2={l.x} y2={l.y}
+                            stroke="#5c3d20" strokeWidth={0.5} strokeDasharray="1.5,1.2"
+                            style={{ pointerEvents: "none" }}
+                          />
+                        )}
+                        <text
+                          x={l.x}
+                          y={l.y}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          style={{
+                            fontSize: LABEL_FONT_SIZE,
+                            fontWeight: 700,
+                            fill: "#1c1006",
+                            pointerEvents: "none",
+                            paintOrder: "stroke",
+                            stroke: "#f7ecd2",
+                            strokeWidth: 2.1,
+                            strokeLinejoin: "round",
+                          }}
+                        >
+                          {l.name}
+                        </text>
+                      </g>
+                    ))}
+                  </>
                 );
-              });
-            }}
-          </Geographies>
-        </ComposableMap>
+              }}
+            </Geographies>
+          </ComposableMap>
+        </div>
       </div>
 
       <footer className="text-center text-xs py-6 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
