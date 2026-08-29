@@ -360,7 +360,7 @@ export default function Dashboard() {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Email</Label>
-              <Input type="email" placeholder="ellie@…" value={email} onChange={e => setEmail(e.target.value)} required />
+              <Input type="email" placeholder="vashava@…" value={email} onChange={e => setEmail(e.target.value)} required />
             </div>
             <div>
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Password</Label>

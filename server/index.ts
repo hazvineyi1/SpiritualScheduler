@@ -10,7 +10,7 @@ app.use(express.urlencoded({ extended: false }));
 
 const MemoryStore = createMemoryStore(session);
 const isProd = app.get("env") === "production";
-const sessionSecret = process.env.SESSION_SECRET || (isProd ? "" : "elliestrator-dev-secret");
+const sessionSecret = process.env.SESSION_SECRET || (isProd ? "" : "vashava-dev-secret");
 if (!sessionSecret) {
   throw new Error("SESSION_SECRET must be set in production");
 }
