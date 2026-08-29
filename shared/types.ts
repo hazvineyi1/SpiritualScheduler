@@ -14,7 +14,6 @@ export interface Reading {
   name: string;
   category: ReadingCategory;
   price: number;
-  originalPrice?: number;
   description: string;
   formats: SessionFormat[];
   isAdult: boolean;
@@ -25,7 +24,7 @@ export interface Reading {
 export interface Product {
   id: number;
   name: string;
-  category: "incense" | "crystals" | "jewellery" | "oils";
+  category: "herbs";
   price: number;
   description: string;
 }
@@ -43,37 +42,23 @@ const D: SessionFormat[] = ["video", "audio", "chat", "async"];
 
 export const READINGS: Reading[] = [
   // Guidance & Consultation
-  { id: 1, name: "Matare/Consultation", category: "guidance_consultation", price: 20, originalPrice: 25, description: "Kukurukura namuchembere — a general consultation to discuss whatever is on your mind with VaShava.", formats: D, isAdult: false, isFixed: false },
-  { id: 2, name: "Yes/No Questions", category: "guidance_consultation", price: 10, originalPrice: 15, description: "Mibvunzo inoda Hongu kana Kwete — quick, direct answers to yes-or-no questions.", formats: D, isAdult: false, isFixed: false },
-  { id: 3, name: "Career Guidance", category: "guidance_consultation", price: 20, originalPrice: 25, description: "Guidance on how to earn a living and navigate your career path.", formats: D, isAdult: false, isFixed: false },
-  { id: 4, name: "Dreams/Makope Interpretation", category: "guidance_consultation", price: 10, originalPrice: 15, description: "Kutsanangurirwa makope nezvaanoreva — understand what your dreams mean and the messages behind them.", formats: D, isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
+  { id: 1, name: "Matare/Consultation", category: "guidance_consultation", price: 20, description: "Kukurukura namuchembere — a general consultation to discuss whatever is on your mind with VaShava.", formats: D, isAdult: false, isFixed: false },
+  { id: 2, name: "Yes/No Questions", category: "guidance_consultation", price: 10, description: "Mibvunzo inoda Hongu kana Kwete — quick, direct answers to yes-or-no questions.", formats: D, isAdult: false, isFixed: false },
+  { id: 3, name: "Career Guidance", category: "guidance_consultation", price: 20, description: "Guidance on how to earn a living and navigate your career path.", formats: D, isAdult: false, isFixed: false },
+  { id: 4, name: "Dreams/Makope Interpretation", category: "guidance_consultation", price: 10, description: "Kutsanangurirwa makope nezvaanoreva — understand what your dreams mean and the messages behind them.", formats: D, isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
 
   // Ancestral & Cleansing
-  { id: 5, name: "Kunatira neKurutsiswa", category: "ancestral_cleansing", price: 30, originalPrice: 35, description: "Kunatiriswa kana kuritsiswa namuchembere — traditional cleansing and spiritual help from the elder.", formats: D, isAdult: false, isFixed: false },
-  { id: 6, name: "Kusimudza Muchembere", category: "ancestral_cleansing", price: 50, originalPrice: 55, description: "Kusimudza muchembere kuuya kwake — invoking and raising the ancestral spirit to come forward.", formats: D, isAdult: false, isFixed: false },
-  { id: 7, name: "Kutsikira Masango", category: "ancestral_cleansing", price: 50, originalPrice: 55, description: "Kuenda namuchembere kumasango — an in-person journey with VaShava to the forest for sacred ritual work.", formats: ["in_person"], isAdult: false, isFixed: true },
-  { id: 8, name: "Cleansing/Chenura", category: "ancestral_cleansing", price: 30, originalPrice: 35, description: "Cleansing — kuchenurwa namuchembere — a full spiritual cleansing performed by VaShava.", formats: D, isAdult: false, isFixed: false },
+  { id: 5, name: "Kunatira neKurutsiswa", category: "ancestral_cleansing", price: 30, description: "Kunatiriswa kana kuritsiswa namuchembere — traditional cleansing and spiritual help from the elder.", formats: D, isAdult: false, isFixed: false },
+  { id: 6, name: "Kusimudza Muchembere", category: "ancestral_cleansing", price: 50, description: "Kusimudza muchembere kuuya kwake — invoking and raising the ancestral spirit to come forward.", formats: D, isAdult: false, isFixed: false },
+  { id: 7, name: "Kutsikira Masango", category: "ancestral_cleansing", price: 50, description: "Kuenda namuchembere kumasango — an in-person journey with VaShava to the forest for sacred ritual work.", formats: ["in_person"], isAdult: false, isFixed: true },
+  { id: 8, name: "Cleansing/Chenura", category: "ancestral_cleansing", price: 30, description: "Cleansing — kuchenurwa namuchembere — a full spiritual cleansing performed by VaShava.", formats: D, isAdult: false, isFixed: false },
 ];
 
 export const PRODUCTS: Product[] = [
-  { id: 1, name: "White Sage Sticks", category: "incense", price: 5, description: "Traditional cleansing sage for clearing negative energies from spaces and auras." },
-  { id: 2, name: "Blue Sage (Grandmother Sage)", category: "incense", price: 5, description: "Gentle grandmother sage for healing, wisdom, and positive manifestation." },
-  { id: 3, name: "Vanilla Sticks", category: "incense", price: 5, description: "Sweet vanilla incense for love, comfort, and attracting positive energy." },
-  { id: 4, name: "Cinnamon Sandal", category: "incense", price: 5, description: "Warm cinnamon sandalwood blend for protection, prosperity, and spiritual focus." },
-  { id: 5, name: "Pure Loban / Frankincense", category: "incense", price: 10, description: "Sacred frankincense resin for deep spiritual connection and ancestral communication." },
-  { id: 6, name: "Incense Holder", category: "incense", price: 8, description: "Hand-crafted ceramic holder for safe and elegant incense burning." },
-  { id: 7, name: "Moss Agate Bracelet", category: "crystals", price: 10, description: "Nature's stone of new beginnings — promotes growth, abundance, and grounding." },
-  { id: 8, name: "Moonstone Bracelet", category: "crystals", price: 10, description: "The stone of the goddess — enhances intuition, fertility, and emotional balance." },
-  { id: 9, name: "Green Aventurine", category: "crystals", price: 15, description: "The stone of opportunity — attracts luck, prosperity, and heart healing." },
-  { id: 10, name: "Lapis Lazuli Bracelet", category: "crystals", price: 20, description: "Ancient stone of truth and wisdom — activates the third eye and spiritual sight." },
-  { id: 11, name: "Malachite Bracelet", category: "crystals", price: 12, description: "A powerful transformation stone that absorbs negative energies and stimulates growth." },
-  { id: 12, name: "Custom Crystal Bracelet", category: "crystals", price: 20, description: "Personally curated bracelet based on your specific spiritual intentions and needs." },
-  { id: 13, name: "Sea Shell Stone Bracelet", category: "jewellery", price: 20, description: "Ocean-blessed bracelet combining sea shells and healing stones for calm and flow." },
-  { id: 14, name: "Evil Eye Waistbeads", category: "jewellery", price: 15, description: "Traditional African waist beads with evil eye protection for spiritual shielding." },
-  { id: 15, name: "Nazar / Evil Eye Bracelet", category: "jewellery", price: 10, description: "Classic blue evil eye charm bracelet for protection against envy and negative intent." },
-  { id: 16, name: "Road Opener Oil", category: "oils", price: 15, description: "A powerful anointing oil to clear obstacles, open doors, and invite new opportunities." },
-  { id: 17, name: "Main Character Domination Oil", category: "oils", price: 30, description: "Own the room. Amplifies your personal power, aura, and magnetic presence." },
-  { id: 18, name: "Honeypot Yoni Oil", category: "oils", price: 10, description: "Sacred feminine anointing oil for self-love, sensuality, and divine feminine connection." },
+  { id: 1, name: "Chenura/Cleanse", category: "herbs", price: 20, description: "Kuvhura mhanza — opens the mind, clears bad spirits, opens work and relationships, cleanses the stomach." },
+  { id: 2, name: "Ruva reMachembere", category: "herbs", price: 20, description: "Reduces period pain and regulates your cycle — kuchenura chibereko." },
+  { id: 3, name: "JayaGuru", category: "herbs", price: 25, description: "Detoxes the male circulatory system, supports male vitality and rejuvenation, kusimbisa musana." },
+  { id: 4, name: "Mutsvairo - Home Cleanse", category: "herbs", price: 15, description: "Kudzinga mhepo/varoyi mumba — cleansing for new homes and business spaces, including homes with babies and children." },
 ];
 
 export const SEEDED_REVIEWS: Review[] = [

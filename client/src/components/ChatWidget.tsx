@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react";
 import { MessageCircle, X, Send } from "lucide-react";
 
-const GN     = "#b8962e";
-const DARK   = "#111111";
-const BORDER = "#e2e0da";
-const HERO   = "#f7f6f2";
+const GN     = "#355e4a";
+const DARK   = "#1c1712";
+const BORDER = "#ddd2bc";
+const HERO   = "#f0ead9";
 const WA_LINK = "https://wa.me/263771234567";
 
 type Msg = { from: "bot" | "user"; text: string };

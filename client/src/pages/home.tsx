@@ -1,11 +1,13 @@
 import { useState, useMemo } from "react";
 import { Link } from "wouter";
-import { READINGS, CATEGORY_LABELS } from "@shared/types";
+import { READINGS, PRODUCTS, CATEGORY_LABELS } from "@shared/types";
 import type { ReadingCategory } from "@shared/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { MapPin, Clock, Shield, MessageCircle, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { MapPin, Clock, Shield, MessageCircle, Search, ChevronDown, ChevronRight, ShoppingBag, Plus, Minus } from "lucide-react";
 import ChatWidget from "@/components/ChatWidget";
+
+interface CartItem { id: number; name: string; price: number; qty: number; }
 
 const CAT_ICON: Record<string, string> = {
   guidance_consultation: "🔮",
@@ -15,16 +17,40 @@ const CAT_ICON: Record<string, string> = {
 const ALL_CATS = Object.keys(CATEGORY_LABELS) as ReadingCategory[];
 const ELLIE_WA = "https://wa.me/263771234567";
 
-const BG     = "#ffffff";
-const HERO   = "#f7f6f2";
-const BORDER = "#e2e0da";
-const GN     = "#b8962e";
-const DARK   = "#111111";
-const GOLD   = "#8a6a2a";
+const BG     = "#faf7f2";
+const HERO   = "#f0ead9";
+const BORDER = "#ddd2bc";
+const GN     = "#355e4a";
+const DARK   = "#1c1712";
+const GOLD   = "#a2532e";
 
 export default function Home() {
+  const [tab, setTab] = useState<"readings" | "shop">("readings");
   const [search, setSearch] = useState("");
   const [openCats, setOpenCats] = useState<Set<ReadingCategory>>(new Set<ReadingCategory>(["guidance_consultation"]));
+  const [cart, setCart] = useState<CartItem[]>([]);
+
+  const addToCart = (id: number) => {
+    const p = PRODUCTS.find(p => p.id === id);
+    if (!p) return;
+    setCart(prev => {
+      const existing = prev.find(c => c.id === id);
+      if (existing) return prev.map(c => c.id === id ? { ...c, qty: c.qty + 1 } : c);
+      return [...prev, { id: p.id, name: p.name, price: p.price, qty: 1 }];
+    });
+  };
+  const updateQty = (id: number, delta: number) => {
+    setCart(prev => prev
+      .map(c => c.id === id ? { ...c, qty: c.qty + delta } : c)
+      .filter(c => c.qty > 0));
+  };
+  const cartTotal = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
+  const cartCount = cart.reduce((sum, c) => sum + c.qty, 0);
+  const checkout = () => {
+    const lines = cart.map(c => `${c.qty}x ${c.name} ($${c.price * c.qty})`).join("\n");
+    const msg = `Hi VaShava! I'd like to order:\n${lines}\nTotal: $${cartTotal}`;
+    window.open(`${ELLIE_WA}?text=${encodeURIComponent(msg)}`, "_blank");
+  };
 
   const toggleCat = (c: ReadingCategory) =>
     setOpenCats(prev => { const s = new Set(prev); s.has(c) ? s.delete(c) : s.add(c); return s; });
@@ -105,64 +131,117 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CONTENT — readings only */}
-      <div className="max-w-5xl mx-auto px-4 py-4">
-        {/* Search */}
-        <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
-          <Input placeholder="Search readings…" className="pl-9 h-8 text-sm bg-white" style={{ borderColor: BORDER }}
-            value={search} onChange={e => setSearch(e.target.value)} />
+      {/* TABS */}
+      <div className="border-b" style={{ borderColor: BORDER, background: BG }}>
+        <div className="max-w-5xl mx-auto px-4 flex">
+          {(["readings", "shop"] as const).map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              className="px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors"
+              style={{ borderColor: tab === t ? GN : "transparent", color: tab === t ? GN : "#9a8e7e" }}>
+              {t === "readings" ? `Readings (${READINGS.length})` : `Shop (${PRODUCTS.length})`}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {/* Category accordion */}
-        <div className="rounded-lg overflow-hidden border bg-white" style={{ borderColor: BORDER }}>
-          {ALL_CATS.map((cat, ci) => {
-            const rows = readingsBycat[cat];
-            if (searchQ && rows.length === 0) return null;
-            const isOpen = openCats.has(cat) || (searchQ.length > 0 && rows.length > 0);
-            return (
-              <div key={cat} style={{ borderTop: ci > 0 ? `1px solid ${BORDER}` : undefined }}>
-                {/* Category header */}
-                <button onClick={() => toggleCat(cat)}
-                  className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-[#f5f1eb]"
-                  style={{ background: isOpen ? HERO : "white" }}>
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{CAT_ICON[cat]}</span>
-                    <span className="text-sm font-medium" style={{ color: DARK }}>{CATEGORY_LABELS[cat]}</span>
-                    <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: "#f0ece4", color: "#7a6e5e" }}>{rows.length}</span>
+      {/* CONTENT */}
+      <div className="max-w-5xl mx-auto px-4 py-4">
+        {tab === "readings" && (
+          <>
+            {/* Search */}
+            <div className="relative mb-3">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-stone-400" />
+              <Input placeholder="Search readings…" className="pl-9 h-8 text-sm bg-white" style={{ borderColor: BORDER }}
+                value={search} onChange={e => setSearch(e.target.value)} />
+            </div>
+
+            {/* Category accordion */}
+            <div className="rounded-lg overflow-hidden border bg-white" style={{ borderColor: BORDER }}>
+              {ALL_CATS.map((cat, ci) => {
+                const rows = readingsBycat[cat];
+                if (searchQ && rows.length === 0) return null;
+                const isOpen = openCats.has(cat) || (searchQ.length > 0 && rows.length > 0);
+                return (
+                  <div key={cat} style={{ borderTop: ci > 0 ? `1px solid ${BORDER}` : undefined }}>
+                    {/* Category header */}
+                    <button onClick={() => toggleCat(cat)}
+                      className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-[#f5f1eb]"
+                      style={{ background: isOpen ? HERO : "white" }}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base">{CAT_ICON[cat]}</span>
+                        <span className="text-sm font-medium" style={{ color: DARK }}>{CATEGORY_LABELS[cat]}</span>
+                        <span className="text-xs px-1.5 py-0.5 rounded-full" style={{ background: "#f0ece4", color: "#7a6e5e" }}>{rows.length}</span>
+                      </div>
+                      {isOpen
+                        ? <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />
+                        : <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: "#b0a898" }} />}
+                    </button>
+
+                    {/* Reading rows */}
+                    {isOpen && rows.map((r) => (
+                      <div key={r.id}
+                        className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf7f2] transition-colors"
+                        style={{ borderTop: `1px solid #f0ece4`, paddingLeft: 52 }}>
+                        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                          <span className="text-sm truncate" style={{ color: DARK }}>{r.name}</span>
+                          {r.isAdult && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded flex-shrink-0">18+</span>}
+                        </div>
+                        <div className="flex items-center gap-2.5 flex-shrink-0">
+                          <span className="text-sm font-semibold" style={{ color: GN }}>${r.price}</span>
+                          <Link href={`/book/${r.id}`}>
+                            <Button size="sm" className="h-7 text-xs px-3 text-white" style={{ background: GN }}>Book</Button>
+                          </Link>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                  {isOpen
-                    ? <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />
-                    : <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: "#b0a898" }} />}
-                </button>
+                );
+              })}
+            </div>
+            <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>{READINGS.length} readings across {ALL_CATS.length} categories · tap a category to browse</p>
+          </>
+        )}
 
-                {/* Reading rows */}
-                {isOpen && rows.map((r) => (
-                  <div key={r.id}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#faf7f2] transition-colors"
-                    style={{ borderTop: `1px solid #f0ece4`, paddingLeft: 52 }}>
-                    <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                      <span className="text-sm truncate" style={{ color: DARK }}>{r.name}</span>
-                      {r.isAdult && <span className="text-[10px] bg-red-100 text-red-600 px-1 rounded flex-shrink-0">18+</span>}
+        {tab === "shop" && (
+          <>
+            <div className="rounded-lg overflow-hidden border bg-white divide-y" style={{ borderColor: BORDER }}>
+              {PRODUCTS.map(p => {
+                const inCart = cart.find(c => c.id === p.id);
+                return (
+                  <div key={p.id} className="flex items-center gap-3 px-4 py-3" style={{ borderColor: "#f0ece4" }}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: DARK }}>{p.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "#8a7d6b" }}>{p.description}</p>
                     </div>
                     <div className="flex items-center gap-2.5 flex-shrink-0">
-                      <span className="flex items-baseline gap-1">
-                        <span className="text-sm font-semibold" style={{ color: GN }}>${r.price}</span>
-                        {r.originalPrice && (
-                          <span className="text-[11px] line-through" style={{ color: "#c0b8a8" }}>${r.originalPrice}</span>
-                        )}
-                      </span>
-                      <Link href={`/book/${r.id}`}>
-                        <Button size="sm" className="h-7 text-xs px-3 text-white" style={{ background: GN }}>Book</Button>
-                      </Link>
+                      <span className="text-sm font-semibold" style={{ color: GN }}>${p.price}</span>
+                      {inCart ? (
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => updateQty(p.id, -1)} className="w-6 h-6 rounded border flex items-center justify-center" style={{ borderColor: BORDER }}><Minus className="h-3 w-3" /></button>
+                          <span className="text-xs w-4 text-center">{inCart.qty}</span>
+                          <button onClick={() => updateQty(p.id, 1)} className="w-6 h-6 rounded border flex items-center justify-center" style={{ borderColor: BORDER }}><Plus className="h-3 w-3" /></button>
+                        </div>
+                      ) : (
+                        <Button size="sm" className="h-7 text-xs px-3 text-white" style={{ background: GN }} onClick={() => addToCart(p.id)}>Add</Button>
+                      )}
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>Herbal remedies prepared by VaShava · order via WhatsApp</p>
+
+            {cart.length > 0 && (
+              <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:w-80 rounded-lg shadow-xl border p-3 bg-white z-40" style={{ borderColor: BORDER }}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: DARK }}><ShoppingBag className="h-3.5 w-3.5" /> {cartCount} item{cartCount !== 1 ? "s" : ""}</span>
+                  <span className="text-sm font-semibold" style={{ color: GN }}>${cartTotal}</span>
+                </div>
+                <Button className="w-full h-8 text-xs text-white" style={{ background: GN }} onClick={checkout}>Order via WhatsApp</Button>
               </div>
-            );
-          })}
-        </div>
-        <p className="text-center text-xs mt-2" style={{ color: "#b0a898" }}>{READINGS.length} readings across {ALL_CATS.length} categories · tap a category to browse</p>
+            )}
+          </>
+        )}
       </div>
 
       <footer className="text-center text-xs py-5 mt-4 border-t" style={{ borderColor: BORDER, color: "#9a8e7e" }}>
