@@ -4,25 +4,29 @@ import { ComposableMap, Geographies, Sphere, Graticule } from "react-simple-maps
 import { geoCentroid, geoArea, type GeoProjection } from "d3-geo";
 import { Button } from "@/components/ui/button";
 
-const DARK        = "#1c1712";
-const BORDER      = "#c9b896";
-const BROWN_DARK  = "#6b5233";
-const GOLD        = "#c9a227";
-const GOLD_BRIGHT = "#f0d26a";
-const GRID        = "#c9a227";
+const DARK          = "#1c1712";
+const BORDER        = "#c9b896";
+// Bronze palette (warmer, redder, and deeper than gold).
+const BRONZE_LIGHT  = "#d9a468";
+const BRONZE_MID    = "#b5732e";
+const BRONZE_DEEP   = "#8a5a2b";
+const BRONZE_DARK   = "#5c3d20";
+const BRONZE_HOVER  = "#e08a4f";
+const ACCENT_TEXT   = "#a2622f";
 
 const GEO_URL = "/data/africa.json";
 
 // How far each country's own boundary is pulled in toward its own center,
 // so neighboring countries show a visible gap ("fragmented, pulled apart")
 // while every country still sits exactly where it geographically belongs.
-const FRAGMENT_SHRINK = 0.91;
+const FRAGMENT_SHRINK = 0.8;
 
-// Uniform label styling — every label is the same size; countries whose
-// label would collide with an already-placed one simply go unlabeled
-// rather than shrinking, so what IS shown stays fully legible.
+// Uniform label styling — every label is the same size; a name is only
+// shown if it both fits inside its own (now smaller) fragment AND doesn't
+// collide with another already-placed label.
 const LABEL_FONT_SIZE = 6.5;
 const LABEL_PADDING = 1.5;
+const CHAR_WIDTH_FACTOR = 0.56; // rough average glyph width at this font
 
 const MIN_AREA_FOR_LABEL = 0.00035;
 
@@ -37,25 +41,32 @@ const SWAY_PERIOD_MS = 26000;
 type Point = [number, number];
 
 // Projects a geometry's rings and shrinks every point toward `center` by
-// `scale`, returning an SVG path string. Handles Polygon and MultiPolygon.
-function buildFragmentPath(geometry: any, projection: GeoProjection, center: Point, scale: number): string {
+// `scale`. Returns the SVG path string plus the shrunk shape's own bounding
+// box, so callers can check whether a label actually fits inside it.
+function buildFragment(geometry: any, projection: GeoProjection, center: Point, scale: number) {
   const shrink = (lonLat: Point): Point | null => {
     const p = projection(lonLat);
     if (!p) return null;
     return [center[0] + (p[0] - center[0]) * scale, center[1] + (p[1] - center[1]) * scale];
   };
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   const ringToPath = (ring: Point[]): string => {
     const pts = ring.map(shrink).filter((p): p is Point => p !== null);
     if (pts.length < 3) return "";
+    for (const [x, y] of pts) {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
     return "M" + pts.map(p => `${p[0].toFixed(2)},${p[1].toFixed(2)}`).join("L") + "Z";
   };
+  let d = "";
   if (geometry.type === "Polygon") {
-    return geometry.coordinates.map(ringToPath).join(" ");
+    d = geometry.coordinates.map(ringToPath).join(" ");
+  } else if (geometry.type === "MultiPolygon") {
+    d = geometry.coordinates.map((poly: Point[][]) => poly.map(ringToPath).join(" ")).join(" ");
   }
-  if (geometry.type === "MultiPolygon") {
-    return geometry.coordinates.map((poly: Point[][]) => poly.map(ringToPath).join(" ")).join(" ");
-  }
-  return "";
+  const bbox = minX === Infinity ? null : { width: maxX - minX, height: maxY - minY };
+  return { d, bbox };
 }
 
 interface LabelCandidate {
@@ -120,14 +131,14 @@ export default function AfricaMap() {
         <div className="max-w-5xl mx-auto px-4 h-12 flex items-center justify-between">
           <span className="font-semibold text-sm tracking-wide" style={{ color: DARK }}>✦ African Spiritual Hub</span>
           <Link href="/signup">
-            <Button size="sm" className="h-7 text-xs text-white" style={{ background: BROWN_DARK }}>List Your Practice</Button>
+            <Button size="sm" className="h-7 text-xs text-white" style={{ background: BRONZE_DARK }}>List Your Practice</Button>
           </Link>
         </div>
       </nav>
 
       {/* INTRO */}
       <section className="text-center px-4 pt-10 pb-4">
-        <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: GOLD }}>Rooted in tradition</p>
+        <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: ACCENT_TEXT }}>Rooted in tradition</p>
         <h1 className="text-2xl sm:text-4xl font-semibold mb-3" style={{ color: DARK }}>Find a Healer by Country</h1>
         <p className="text-sm sm:text-base max-w-xl mx-auto" style={{ color: "#6b5f4a" }}>
           Choose the country you align with, or where your healer originates from, to see the practitioner hubs there.
@@ -149,13 +160,13 @@ export default function AfricaMap() {
         >
           <defs>
             <linearGradient id="metalGradient" gradientUnits="userSpaceOnUse" x1="200" y1="150" x2="600" y2="650">
-              <stop offset="0%" stopColor="#f2dd9e" />
-              <stop offset="35%" stopColor={GOLD} />
-              <stop offset="70%" stopColor="#a97f3a" />
-              <stop offset="100%" stopColor={BROWN_DARK} />
+              <stop offset="0%" stopColor={BRONZE_LIGHT} />
+              <stop offset="35%" stopColor={BRONZE_MID} />
+              <stop offset="70%" stopColor={BRONZE_DEEP} />
+              <stop offset="100%" stopColor={BRONZE_DARK} />
             </linearGradient>
             <filter id="fragmentShadow" x="-40%" y="-40%" width="180%" height="180%">
-              <feDropShadow dx="0" dy="1" stdDeviation="1.4" floodColor="#3a2a12" floodOpacity="0.6" />
+              <feDropShadow dx="0" dy="1" stdDeviation="1.4" floodColor="#2e1f0f" floodOpacity="0.6" />
             </filter>
             <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
               <feGaussianBlur stdDeviation="6" result="blur" />
@@ -166,40 +177,37 @@ export default function AfricaMap() {
             </filter>
           </defs>
 
-          <Sphere id="globe-sphere" fill="none" stroke={GOLD} strokeWidth={1.5} />
-          <Graticule stroke={GRID} strokeWidth={0.4} style={{ opacity: 0.3 }} />
+          <Sphere id="globe-sphere" fill="none" stroke={BRONZE_MID} strokeWidth={1.5} />
+          <Graticule stroke={BRONZE_MID} strokeWidth={0.4} style={{ opacity: 0.28 }} />
 
           <g filter="url(#glow)">
             <Geographies geography={GEO_URL}>
               {({ geographies, projection }) => {
-                // First pass: work out each visible country's true centroid
-                // and an estimated label footprint, then greedily decide
-                // which labels can be shown without colliding.
-                const withCentroids = geographies.map((geo) => {
+                // First pass: shrink every country toward its own centroid,
+                // capturing both the fragment path and its own bounding box.
+                const fragments = geographies.map((geo) => {
                   const slug = geo.properties!.slug as string;
                   const name = geo.properties!.name as string;
                   const area = geoArea(geo as any);
                   const centroid = projection(geoCentroid(geo as any) as Point);
-                  return { geo, slug, name, area, centroid };
+                  const center: Point = centroid ?? [400, 400];
+                  const { d, bbox } = buildFragment(geo.geometry, projection, center, FRAGMENT_SHRINK);
+                  return { geo, slug, name, area, centroid, d, bbox };
                 });
 
-                const candidates: LabelCandidate[] = withCentroids
-                  .filter(c => c.centroid && c.area > MIN_AREA_FOR_LABEL)
-                  .map(c => ({
-                    key: c.slug,
-                    name: c.name,
-                    x: c.centroid![0],
-                    y: c.centroid![1],
-                    width: c.name.length * LABEL_FONT_SIZE * 0.56,
-                  }))
+                // A label is only a candidate if it fits inside its own
+                // fragment's bounding box — otherwise it's dropped before
+                // collision checking even runs.
+                const candidates: LabelCandidate[] = fragments
+                  .filter(f => f.centroid && f.area > MIN_AREA_FOR_LABEL && f.bbox)
+                  .map(f => ({ ...f, width: f.name.length * LABEL_FONT_SIZE * CHAR_WIDTH_FACTOR }))
+                  .filter(f => f.width <= f.bbox!.width * 0.92 && LABEL_FONT_SIZE <= f.bbox!.height * 0.85)
+                  .map(f => ({ key: f.slug, name: f.name, x: f.centroid![0], y: f.centroid![1], width: f.width }))
                   .sort((a, b) => b.width - a.width);
                 const visibleLabels = placeLabels(candidates);
 
-                return withCentroids.map(({ geo, slug, name, centroid }) => {
+                return fragments.map(({ geo, slug, name, centroid, d }) => {
                   const isHovered = hovered === slug;
-                  const fragmentCenter: Point = centroid ?? [400, 400];
-                  const d = buildFragmentPath(geo.geometry, projection, fragmentCenter, FRAGMENT_SHRINK);
-
                   return (
                     <g key={geo.rsmKey}>
                       <path
@@ -207,8 +215,8 @@ export default function AfricaMap() {
                         onMouseEnter={() => setHovered(slug)}
                         onMouseLeave={() => setHovered(null)}
                         onClick={() => navigate(`/country/${slug}`)}
-                        fill={isHovered ? GOLD_BRIGHT : "url(#metalGradient)"}
-                        stroke={isHovered ? "#ffffff" : "#3a2a12"}
+                        fill={isHovered ? BRONZE_HOVER : "url(#metalGradient)"}
+                        stroke={isHovered ? "#ffffff" : "#2e1f0f"}
                         strokeWidth={isHovered ? 1.1 : 0.7}
                         filter="url(#fragmentShadow)"
                         style={{ outline: "none", cursor: "pointer", transition: "fill 120ms ease" }}
@@ -243,7 +251,7 @@ export default function AfricaMap() {
       </div>
 
       <footer className="text-center text-xs py-6 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
-        <span style={{ color: BROWN_DARK }}>✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
+        <span style={{ color: BRONZE_DARK }}>✦ African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
       </footer>
     </div>
   );
