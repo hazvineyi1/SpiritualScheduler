@@ -67,7 +67,7 @@ export default function Home() {
           src="/images/eland.jpg"
           alt="Kunatira / Kurutsiswa — traditional cleansing"
           className="w-full h-full object-cover"
-          style={{ objectPosition: "center 20%" }}
+          style={{ objectPosition: "center 25%" }}
         />
       </div>
 
