@@ -182,7 +182,7 @@ export default function ScheduleManager() {
                 return (
                   <button key={slot.datetime} disabled={toggleSlot.isPending}
                     onClick={() => toggleSlot.mutate({ datetime: slot.datetime, close: !closed })}
-                    title={closed ? "Closed — click to open" : "Open — click to close"}
+                    title={closed ? "Closed: click to open" : "Open: click to close"}
                     className="rounded-md border py-1.5 text-xs text-center flex items-center justify-center gap-1 transition-colors"
                     style={{
                       borderColor: closed ? "#e6dfd2" : `${GN}55`,

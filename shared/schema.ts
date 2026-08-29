@@ -2,7 +2,7 @@ import { pgTable, text, serial, integer, json, boolean } from "drizzle-orm/pg-co
 import { z } from "zod";
 
 // Each row is one independent healer hub. Readings, products, and
-// availability are stored as JSON on the healer's own row — every healer's
+// availability are stored as JSON on the healer's own row; every healer's
 // catalog and schedule is entirely self-contained and never shared or
 // queried across healers.
 export const healers = pgTable("healers", {

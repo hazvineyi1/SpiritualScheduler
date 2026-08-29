@@ -15,12 +15,12 @@ interface Props {
 
 export default function ChatWidget({ healerName, waLink }: Props) {
   const FAQS: Array<{ q: string; a: string }> = [
-    { q: "How do I book a reading?", a: `Browse the categories on the page, pick a reading that fits what you need, and tap "Book." You'll upload proof of payment, then choose an available time slot — no account needed.` },
+    { q: "How do I book a reading?", a: `Browse the categories on the page, pick a reading that fits what you need, and tap "Book." You'll upload proof of payment, then choose an available time slot. No account needed.` },
     { q: "What payment methods do you accept?", a: "EcoCash, InnBucks, Remitly, and World Remit are all accepted. Exact payment details are shown during checkout." },
     { q: "Is my session private?", a: `Yes. Every session with ${healerName} is confidential and never recorded.` },
-    { q: "How long does a reading take?", a: "Most readings run 30–60 minutes depending on the format you choose — video, audio, chat, or written." },
+    { q: "How long does a reading take?", a: "Most readings run 30–60 minutes depending on the format you choose: video, audio, chat, or written." },
     { q: "Can I reschedule or cancel?", a: `Message ${healerName} directly on WhatsApp as soon as you can, and they'll help sort out a new time.` },
-    { q: "Do you offer in-person sessions?", a: "Some readings are available in person — check the listing for each reading, or ask on WhatsApp." },
+    { q: "Do you offer in-person sessions?", a: "Some readings are available in person. Check the listing for each reading, or ask on WhatsApp." },
   ];
 
   const greeting = `👋 Hi, I'm ${healerName}'s assistant. Pick a question below, or message ${healerName} directly on WhatsApp for anything else.`;
@@ -114,7 +114,7 @@ export default function ChatWidget({ healerName, waLink }: Props) {
             </div>
           </div>
 
-          {/* WhatsApp fallback — always pinned at the bottom */}
+          {/* WhatsApp fallback: always pinned at the bottom */}
           <a
             href={`${waLink}?text=${encodeURIComponent(`Hi ${healerName}! I have a question.`)}`}
             target="_blank"

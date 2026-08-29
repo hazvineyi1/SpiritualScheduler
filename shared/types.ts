@@ -6,7 +6,7 @@ export interface CustomIntakeField {
   placeholder?: string;
 }
 
-// category is free text — each healer defines their own categories to fit
+// category is free text. Each healer defines their own categories to fit
 // their own practice, rather than choosing from a fixed platform-wide list.
 export interface Reading {
   id: number;

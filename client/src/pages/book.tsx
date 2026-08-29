@@ -165,7 +165,7 @@ export default function Book() {
         <div className="rounded-lg border p-4 text-sm text-left space-y-2 mb-5 bg-white" style={{ borderColor: BORDER }}>
           <p style={{ color: "#5a5040" }}>✓ {healer.name} will verify your payment within ~24 hours.</p>
           <p style={{ color: "#5a5040" }}>✓ Your session link will be sent to WhatsApp: <strong>{whatsapp}</strong></p>
-          <p className="text-xs" style={{ color: "#9a8e7e" }}>Nothing more to do — sit back and await your reading. 🌿</p>
+          <p className="text-xs" style={{ color: "#9a8e7e" }}>Nothing more to do. Sit back and await your reading. 🌿</p>
         </div>
         <Button onClick={() => navigate(`/${slug}`)} className="w-full text-white" style={{ background: GN }}>Back to Readings</Button>
       </div>
@@ -226,11 +226,11 @@ export default function Book() {
                     <div className="flex-1">
                       <p className="text-sm font-medium" style={{ color: DARK }}>{FORMAT_LABELS[f]}</p>
                       <p className="text-xs" style={{ color: "#9a8e7e" }}>
-                        {f === "video" && "Live video call on WhatsApp — scheduled"}
-                        {f === "audio" && "Live audio call on WhatsApp — scheduled"}
+                        {f === "video" && "Live video call on WhatsApp, scheduled"}
+                        {f === "audio" && "Live audio call on WhatsApp, scheduled"}
                         {f === "chat" && "Real-time text on WhatsApp"}
                         {f === "async" && "Written/recorded reply on WhatsApp within ~24h"}
-                        {f === "in_person" && `${healer.name}'s location — confirmed via WhatsApp`}
+                        {f === "in_person" && `${healer.name}'s location, confirmed via WhatsApp`}
                       </p>
                     </div>
                     {sel && <CheckCircle2 className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />}
@@ -294,7 +294,7 @@ export default function Book() {
         {step === 2 && (
           <div>
             <h2 className="font-medium mb-1" style={{ color: DARK }}>About you</h2>
-            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential — only seen by {healer.name}.</p>
+            <p className="text-sm mb-4" style={{ color: "#9a8e7e" }}>Strictly confidential; only seen by {healer.name}.</p>
             <div className="space-y-4 mb-5">
               <div>
                 <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Full name *</Label>
@@ -378,12 +378,12 @@ export default function Book() {
                 {whatsapp.trim().length > 0 && !waValid ? (
                   <p className="text-xs mt-1" style={{ color: "#b05050" }}>
                     {waStartsZero
-                      ? "Include your country code instead of the leading 0 — e.g. +263 77 123 4567."
-                      : "Enter the full number with country code — e.g. +263 77 123 4567."}
+                      ? "Include your country code instead of the leading 0, e.g. +263 77 123 4567."
+                      : "Enter the full number with country code, e.g. +263 77 123 4567."}
                   </p>
                 ) : (
                   <p className="text-xs mt-1" style={{ color: "#b0a898" }}>
-                    Must be an active WhatsApp number with country code — this is how {healer.name} reaches you.
+                    Must be an active WhatsApp number with country code. This is how {healer.name} reaches you.
                   </p>
                 )}
                 {waValid && (

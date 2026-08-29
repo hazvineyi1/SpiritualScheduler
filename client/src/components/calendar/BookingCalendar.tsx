@@ -106,7 +106,7 @@ export default function BookingCalendar({ slug, selected, onSelect }: BookingCal
             ) : bookable.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-sm font-medium" style={{ color: "#a06030" }}>Fully booked</p>
-                <p className="text-xs mt-1" style={{ color: "#b0a898" }}>No open times left on this day — please pick another date.</p>
+                <p className="text-xs mt-1" style={{ color: "#b0a898" }}>No open times left on this day. Please pick another date.</p>
               </div>
             ) : (
               <ScrollArea className="h-[260px] pr-2">

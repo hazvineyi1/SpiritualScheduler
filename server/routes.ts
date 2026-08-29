@@ -7,7 +7,7 @@ import type { Request, Response, NextFunction } from "express";
 
 declare module "express-session" {
   interface SessionData {
-    // healerId is the sole source of truth for every authenticated action —
+    // healerId is the sole source of truth for every authenticated action;
     // a signed-in healer can only ever read or modify their own hub's data.
     user?: { healerId: number; slug: string; email: string; name: string };
   }
@@ -124,7 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ---- Authenticated dashboard (always scoped to req.session.user.healerId,
-  // never to a slug or id supplied by the request — a healer can only ever
+  // never to a slug or id supplied by the request. A healer can only ever
   // act as themselves) --------------------------------------------------
   app.get("/api/appointments", requireHealer, async (req, res) => {
     try {

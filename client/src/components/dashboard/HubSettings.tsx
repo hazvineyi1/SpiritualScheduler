@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Save, Plus, Trash2, UserCog, Sparkles, ShoppingBag, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, UserCog, ShoppingBag, Loader2 } from "lucide-react";
 import type { Reading, Product, SessionFormat } from "@shared/types";
 
 const HERO   = "#e6d7b3";
@@ -162,7 +162,7 @@ export default function HubSettings({ slug }: { slug: string }) {
               <Input value={profile.headerImageUrl} onChange={e => setProfile(p => ({ ...p, headerImageUrl: e.target.value }))} placeholder="https://…" />
             </div>
           </div>
-          <p className="text-[11px]" style={{ color: "#b0a898" }}>Paste a link to an image hosted elsewhere — direct upload isn't available yet.</p>
+          <p className="text-[11px]" style={{ color: "#b0a898" }}>Paste a link to an image hosted elsewhere. Direct upload isn't available yet.</p>
           <Button size="sm" className="text-white gap-1.5" style={{ background: GN }} onClick={saveProfile} disabled={savingProfile}>
             <Save className="h-3.5 w-3.5" /> {savingProfile ? "Saving…" : "Save Profile"}
           </Button>
@@ -172,7 +172,6 @@ export default function HubSettings({ slug }: { slug: string }) {
       {/* Readings editor */}
       <div className="rounded-lg border overflow-hidden" style={{ borderColor: BORDER }}>
         <div className="px-4 py-2.5 flex items-center gap-2 border-b bg-white" style={{ borderColor: BORDER }}>
-          <Sparkles className="h-4 w-4" style={{ color: GN }} />
           <span className="text-sm font-medium" style={{ color: DARK }}>Readings</span>
           <span className="text-xs px-1.5 py-0.5 rounded-full ml-auto" style={{ background: "#f0ece4", color: "#7a6e5e" }}>{readings.length}</span>
         </div>
@@ -224,7 +223,7 @@ export default function HubSettings({ slug }: { slug: string }) {
               </div>
             </div>
           ))}
-          {readings.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No readings yet — add your first one below.</p>}
+          {readings.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No readings yet. Add your first one below.</p>}
         </div>
         <div className="px-4 py-3 bg-white border-t flex items-center gap-2" style={{ borderColor: BORDER }}>
           <Button size="sm" variant="outline" className="gap-1.5" style={{ borderColor: BORDER, color: GN }} onClick={addReading}>
@@ -251,7 +250,7 @@ export default function HubSettings({ slug }: { slug: string }) {
         </div>
         {!profile.shopEnabled && (
           <p className="text-xs px-4 py-2 bg-white" style={{ color: "#b0a898" }}>
-            Your shop is hidden from visitors. You can still add and edit products below — they just won't be visible until you turn this back on.
+            Your shop is hidden from visitors. You can still add and edit products below; they just won't be visible until you turn this back on.
           </p>
         )}
         <div className="divide-y bg-white" style={{ borderColor: "#f0ece4" }}>
@@ -279,7 +278,7 @@ export default function HubSettings({ slug }: { slug: string }) {
               </div>
             </div>
           ))}
-          {products.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No products yet — add one below.</p>}
+          {products.length === 0 && <p className="text-sm text-center py-6" style={{ color: "#9a8e7e" }}>No products yet. Add one below.</p>}
         </div>
         <div className="px-4 py-3 bg-white border-t flex items-center gap-2" style={{ borderColor: BORDER }}>
           <Button size="sm" variant="outline" className="gap-1.5" style={{ borderColor: BORDER, color: GN }} onClick={addProduct}>
@@ -289,7 +288,7 @@ export default function HubSettings({ slug }: { slug: string }) {
       </div>
 
       <div className="rounded-lg p-3 flex items-center justify-between" style={{ background: HERO, border: `1px solid ${GN}33` }}>
-        <p className="text-xs" style={{ color: "#5a5040" }}>Save readings and products together — this updates your live storefront immediately.</p>
+        <p className="text-xs" style={{ color: "#5a5040" }}>Save readings and products together. This updates your live storefront immediately.</p>
         <Button className="text-white gap-1.5 flex-shrink-0" style={{ background: GN }} onClick={saveCatalog} disabled={savingCatalog}>
           <Save className="h-3.5 w-3.5" /> {savingCatalog ? "Saving…" : "Save Catalog"}
         </Button>

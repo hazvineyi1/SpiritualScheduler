@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { MapPin, Shield, ArrowRight, Sparkles } from "lucide-react";
+import { MapPin, Shield, ArrowRight } from "lucide-react";
 
 const BG      = "#f5efe0";
 const HERO    = "#e6d7b3";
@@ -53,21 +53,21 @@ export default function Directory() {
           <p className="text-xs uppercase tracking-[0.25em] mb-3" style={{ color: "#e3b98a" }}>Rooted in tradition</p>
           <h1 className="text-3xl sm:text-5xl font-semibold mb-3 text-white">African Spiritual Hub</h1>
           <p className="text-sm sm:text-base max-w-xl mx-auto text-white/85">
-            A home for verified African spiritual practitioners — each with their own independent hub for readings, cleansing, and consultation, booked directly and privately.
+            A home for verified African spiritual practitioners, each with their own independent hub for readings, cleansing, and consultation, booked directly and privately.
           </p>
         </div>
       </section>
 
       {/* HEALER GRID */}
       <div className="max-w-5xl mx-auto px-4 py-10">
-        <h2 className="text-sm font-medium mb-4 flex items-center gap-1.5" style={{ color: "#6b5f4a" }}>
-          <Sparkles className="h-3.5 w-3.5" /> Practitioner Hubs
+        <h2 className="text-sm font-medium mb-4" style={{ color: "#6b5f4a" }}>
+          Practitioner Hubs
         </h2>
 
         {isLoading && <p className="text-sm" style={{ color: "#8a7d63" }}>Loading hubs…</p>}
 
         {!isLoading && healers.length === 0 && (
-          <p className="text-sm" style={{ color: "#8a7d63" }}>No hubs yet — be the first to list your practice.</p>
+          <p className="text-sm" style={{ color: "#8a7d63" }}>No hubs yet. Be the first to list your practice.</p>
         )}
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">

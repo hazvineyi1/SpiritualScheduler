@@ -46,7 +46,7 @@ export default function Signup() {
         <div className="text-center mb-6">
           <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#a2532e" }}>African Spiritual Hub</p>
           <h1 className="text-xl font-semibold" style={{ color: DARK }}>List Your Practice</h1>
-          <p className="text-xs mt-1" style={{ color: "#8a7d6b" }}>Get your own independent booking hub — separate from every other practitioner on the platform.</p>
+          <p className="text-xs mt-1" style={{ color: "#8a7d6b" }}>Get your own independent booking hub, separate from every other practitioner on the platform.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl p-6 border space-y-4" style={{ borderColor: BORDER }}>

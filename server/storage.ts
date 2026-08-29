@@ -56,7 +56,7 @@ const DEFAULT_AVAILABILITY: AvailabilityConfig = {
 };
 
 export interface IStorage {
-  // Healers — every healer's data (readings, products, availability,
+  // Healers: every healer's data (readings, products, availability,
   // appointments) lives only on that healer's own record. No query here
   // ever reads across healers except listHealers(), which returns only
   // public directory fields (never catalogs, appointments, or credentials).
@@ -83,7 +83,7 @@ export interface IStorage {
 }
 
 // A small rotation of nature/heritage images given to new hubs as a starting
-// header photo — each healer can replace it any time from Hub Settings.
+// header photo. Each healer can replace it any time from Hub Settings.
 const DEFAULT_HEADER_IMAGES = ["/images/default-header-1.jpg", "/images/default-header-2.jpg", "/images/default-header-3.jpg"];
 
 export class MemStorage implements IStorage {
@@ -111,20 +111,20 @@ export class MemStorage implements IStorage {
       zinathaVerified: true,
       shopEnabled: true,
       readings: [
-        { id: 1, name: "Matare/Consultation", category: "Guidance & Consultation", price: 20, description: "Kukurukura namuchembere — a general consultation to discuss whatever is on your mind with VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
-        { id: 2, name: "Yes/No Questions", category: "Guidance & Consultation", price: 10, description: "Mibvunzo inoda Hongu kana Kwete — quick, direct answers to yes-or-no questions.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 1, name: "Matare/Consultation", category: "Guidance & Consultation", price: 20, description: "Kukurukura namuchembere: a general consultation to discuss whatever is on your mind with VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 2, name: "Yes/No Questions", category: "Guidance & Consultation", price: 10, description: "Mibvunzo inoda Hongu kana Kwete: quick, direct answers to yes-or-no questions.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
         { id: 3, name: "Career Guidance", category: "Guidance & Consultation", price: 20, description: "Guidance on how to earn a living and navigate your career path.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
-        { id: 4, name: "Dreams/Makope Interpretation", category: "Guidance & Consultation", price: 10, description: "Kutsanangurirwa makope nezvaanoreva — understand what your dreams mean and the messages behind them.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
-        { id: 5, name: "Kunatira neKurutsiswa", category: "Ancestral & Cleansing", price: 30, description: "Kunatiriswa kana kuritsiswa namuchembere — traditional cleansing and spiritual help from the elder.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
-        { id: 6, name: "Kusimudza Muchembere", category: "Ancestral & Cleansing", price: 50, description: "Kusimudza muchembere kuuya kwake — invoking and raising the ancestral spirit to come forward.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
-        { id: 7, name: "Kutsikira Masango", category: "Ancestral & Cleansing", price: 50, description: "Kuenda namuchembere kumasango — an in-person journey with VaShava to the forest for sacred ritual work.", formats: ["in_person"], isAdult: false, isFixed: true },
-        { id: 8, name: "Cleansing/Chenura", category: "Ancestral & Cleansing", price: 30, description: "Cleansing — kuchenurwa namuchembere — a full spiritual cleansing performed by VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 4, name: "Dreams/Makope Interpretation", category: "Guidance & Consultation", price: 10, description: "Kutsanangurirwa makope nezvaanoreva: understand what your dreams mean and the messages behind them.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
+        { id: 5, name: "Kunatira neKurutsiswa", category: "Ancestral & Cleansing", price: 30, description: "Kunatiriswa kana kuritsiswa namuchembere: traditional cleansing and spiritual help from the elder.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 6, name: "Kusimudza Muchembere", category: "Ancestral & Cleansing", price: 50, description: "Kusimudza muchembere kuuya kwake: invoking and raising the ancestral spirit to come forward.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 7, name: "Kutsikira Masango", category: "Ancestral & Cleansing", price: 50, description: "Kuenda namuchembere kumasango: an in-person journey with VaShava to the forest for sacred ritual work.", formats: ["in_person"], isAdult: false, isFixed: true },
+        { id: 8, name: "Cleansing/Chenura", category: "Ancestral & Cleansing", price: 30, description: "Cleansing: kuchenurwa namuchembere, a full spiritual cleansing performed by VaShava.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
       ],
       products: [
-        { id: 1, name: "Chenura/Cleanse", price: 20, description: "Kuvhura mhanza — opens the mind, clears bad spirits, opens work and relationships, cleanses the stomach." },
-        { id: 2, name: "Ruva reMachembere", price: 20, description: "Reduces period pain and regulates your cycle — kuchenura chibereko." },
+        { id: 1, name: "Chenura/Cleanse", price: 20, description: "Kuvhura mhanza: opens the mind, clears bad spirits, opens work and relationships, cleanses the stomach." },
+        { id: 2, name: "Ruva reMachembere", price: 20, description: "Reduces period pain and regulates your cycle: kuchenura chibereko." },
         { id: 3, name: "JayaGuru", price: 25, description: "Detoxes the male circulatory system, supports male vitality and rejuvenation, kusimbisa musana." },
-        { id: 4, name: "Mutsvairo - Home Cleanse", price: 15, description: "Kudzinga mhepo/varoyi mumba — cleansing for new homes and business spaces, including homes with babies and children." },
+        { id: 4, name: "Mutsvairo - Home Cleanse", price: 15, description: "Kudzinga mhepo/varoyi mumba: cleansing for new homes and business spaces, including homes with babies and children." },
       ],
       availability: { ...DEFAULT_AVAILABILITY },
       createdAt: new Date().toISOString(),
@@ -169,7 +169,7 @@ export class MemStorage implements IStorage {
     return healer;
   }
 
-  // Public directory listing — deliberately returns full healer rows since
+  // Public directory listing: deliberately returns full healer rows since
   // this in-memory store only holds public profile fields plus each
   // healer's OWN catalog; callers that render the directory only read the
   // public fields (slug/name/tagline/etc.), never another healer's
@@ -195,7 +195,7 @@ export class MemStorage implements IStorage {
   }
 
   // Clears one healer's appointments only. Exposed via a healer-only API
-  // route, scoped to req.session.user.id — a healer can only ever reset
+  // route, scoped to req.session.user.id, a healer can only ever reset
   // their own bookings, never another hub's.
   resetAppointments(healerId: number) {
     for (const [id, apt] of this.appointments) {
@@ -242,7 +242,7 @@ export class MemStorage implements IStorage {
   private assertSlotBookable(healerId: number, iso: string) {
     const when = new Date(iso);
     if (isNaN(when.getTime())) throw new SlotUnavailableError("Invalid session time.");
-    if (when.getTime() < Date.now()) throw new SlotUnavailableError("That time is in the past — please pick another slot.");
+    if (when.getTime() < Date.now()) throw new SlotUnavailableError("That time is in the past. Please pick another slot.");
     const { weekday, hour, dateStr, minute } = harareParts(when);
     const cfg = this.availabilityFor(healerId);
     if (!cfg.weekdays.includes(weekday)) throw new SlotUnavailableError("Not available on that day. Please pick another.");

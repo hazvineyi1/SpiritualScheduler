@@ -115,7 +115,7 @@ export default function Home() {
         </div>
       </nav>
 
-      {/* HEADER BANNER — full width */}
+      {/* HEADER BANNER: full width */}
       {healer.headerImageUrl && (
         <div className="w-full h-72 sm:h-96 md:h-[28rem] overflow-hidden">
           <img

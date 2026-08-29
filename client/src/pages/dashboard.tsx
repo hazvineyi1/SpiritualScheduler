@@ -80,7 +80,7 @@ function clientWaLink(apt: Appointment, msg: string): string | null {
 
 function startMessage(apt: Appointment, healerName: string): string {
   const fmt = FORMAT_LABELS[apt.format] || apt.format;
-  return `Hi ${apt.clientName || "there"}! ✦ This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge — otherwise we'll need to reschedule.`;
+  return `Hi ${apt.clientName || "there"}! ✦ This is ${healerName} 🌿 We're ready to begin your ${apt.readingName} (${fmt}) session now. Please join within the next 5 minutes to acknowledge; otherwise we'll need to reschedule.`;
 }
 
 // ---- Live session card ----------------------------------------------------
@@ -501,7 +501,7 @@ export default function Dashboard() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: "#c9a96e" }} />
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5" style={{ background: "#c9a96e" }} />
               </span>
-              <span className="text-sm font-medium" style={{ color: GOLD }}>Payments to verify — {pending.length}</span>
+              <span className="text-sm font-medium" style={{ color: GOLD }}>Payments to verify: {pending.length}</span>
             </div>
             {pending.map((a, i) => (
               <div key={a.id} className="flex items-center gap-3 px-4 py-2.5 bg-white" style={{ borderTop: i > 0 ? "1px solid #f5f0e8" : undefined }}>
