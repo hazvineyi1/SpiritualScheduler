@@ -12,6 +12,7 @@ import { FORMAT_LABELS } from "@shared/types";
 import {
   CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List,
   LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock, Trash2, Settings,
+  ChevronDown, ChevronRight,
 } from "lucide-react";
 import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
@@ -308,6 +309,9 @@ export default function Dashboard() {
   const [view, setView] = useState<"list" | "calendar">("list");
   const [page, setPage] = useState<"bookings" | "settings">("bookings");
   const [now, setNow] = useState(Date.now());
+  // Starts collapsed — the summary count in the header is enough at a
+  // glance; expand only when you actually want to see the session cards.
+  const [sessionsOpen, setSessionsOpen] = useState(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 20000);
@@ -527,7 +531,14 @@ export default function Dashboard() {
 
         {/* Live & upcoming sessions */}
         <div className="rounded-lg border overflow-hidden" style={{ borderColor: liveNow.length ? `${GN}55` : BORDER }}>
-          <div className="px-4 py-2.5 flex items-center gap-2 border-b" style={{ background: HERO, borderColor: "#e2e8da" }}>
+          <button
+            onClick={() => setSessionsOpen(o => !o)}
+            className="w-full px-4 py-2.5 flex items-center gap-2 border-b text-left"
+            style={{ background: HERO, borderColor: "#e2e8da" }}
+          >
+            {sessionsOpen
+              ? <ChevronDown className="h-4 w-4 flex-shrink-0" style={{ color: GN }} />
+              : <ChevronRight className="h-4 w-4 flex-shrink-0" style={{ color: "#9a8e7e" }} />}
             <Radio className="h-4 w-4" style={{ color: GN }} />
             <span className="text-sm font-medium" style={{ color: DARK }}>Sessions</span>
             {liveNow.length > 0 && (
@@ -540,21 +551,23 @@ export default function Dashboard() {
               </span>
             )}
             <span className="ml-auto text-xs" style={{ color: "#9a8e7e" }}>{active.length} active</span>
-          </div>
-          {active.length === 0 ? (
-            <div className="py-8 text-center bg-white">
-              <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#c9b896" }} />
-              <p className="text-sm" style={{ color: "#9a8e7e" }}>No confirmed sessions yet.</p>
-              <p className="text-xs mt-0.5" style={{ color: "#b0a898" }}>Verify a payment to schedule a session.</p>
-            </div>
-          ) : (
-            <div className="p-3 grid sm:grid-cols-2 gap-2.5 bg-white">
-              {active.map(a => (
-                <SessionCard key={a.id} apt={a} now={now} healerName={me?.name || ""}
-                  onStart={startSession} onComplete={(id) => act(id, "complete")} onCancel={(id) => act(id, "cancel")}
-                  busy={mutate.isPending} />
-              ))}
-            </div>
+          </button>
+          {sessionsOpen && (
+            active.length === 0 ? (
+              <div className="py-8 text-center bg-white">
+                <CalendarClock className="h-7 w-7 mx-auto mb-2" style={{ color: "#c9b896" }} />
+                <p className="text-sm" style={{ color: "#9a8e7e" }}>No confirmed sessions yet.</p>
+                <p className="text-xs mt-0.5" style={{ color: "#b0a898" }}>Verify a payment to schedule a session.</p>
+              </div>
+            ) : (
+              <div className="p-3 grid sm:grid-cols-2 gap-2.5 bg-white">
+                {active.map(a => (
+                  <SessionCard key={a.id} apt={a} now={now} healerName={me?.name || ""}
+                    onStart={startSession} onComplete={(id) => act(id, "complete")} onCancel={(id) => act(id, "cancel")}
+                    busy={mutate.isPending} />
+                ))}
+              </div>
+            )
           )}
         </div>
 
