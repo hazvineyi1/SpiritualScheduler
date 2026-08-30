@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useVisitTracking } from "@/hooks/use-visit-tracking";
 import {
-  CheckCircle2, ArrowRight, Lock, ShieldCheck, MessageCircle, Mail, Play, Pause,
+  CheckCircle2, ArrowRight, ShieldCheck, MessageCircle, Mail, Play, Pause,
 } from "lucide-react";
 
 const BG      = "#f5efe0";
@@ -237,7 +237,6 @@ export default function ForHealers() {
 
       {/* COMPACT TRUST ROW */}
       <div className="max-w-3xl mx-auto px-4 pb-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
-        <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><Lock className="h-3.5 w-3.5" style={{ color: GN }} /> Independent &amp; private</span>
         <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><ShieldCheck className="h-3.5 w-3.5" style={{ color: GN }} /> ZINATHA verification available</span>
         <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><MessageCircle className="h-3.5 w-3.5" style={{ color: GN }} /> WhatsApp stays central</span>
       </div>
@@ -270,11 +269,10 @@ export default function ForHealers() {
                 {error && <p className="text-xs mt-2 text-red-200">{error}</p>}
               </>
             )}
-            <p className="text-xs mt-3" style={{ color: "#c9d6cc" }}>
-              Prefer email? Reach us at{" "}
+            <p className="text-[11px] mt-3" style={{ color: "#a9c2b5" }}>
               <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("I'm interested in African Spiritual Hub")}`}
-                className="underline inline-flex items-center gap-1 text-white">
-                <Mail className="h-3 w-3" /> {SUPPORT_EMAIL}
+                className="underline inline-flex items-center gap-1">
+                <Mail className="h-2.5 w-2.5" /> Prefer email? Contact us
               </a>
             </p>
           </div>
@@ -282,7 +280,7 @@ export default function ForHealers() {
       </section>
 
       <footer className="text-center text-xs py-4 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
-        <span style={{ color: GN }}>African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
+        <span style={{ color: GN }}>African Spiritual Hub</span>
       </footer>
     </div>
   );
