@@ -603,9 +603,8 @@ export class MemStorage implements IStorage {
   async createLead(data: InsertLead): Promise<Lead> {
     const base = {
       name: data.name,
-      contact: data.contact,
-      country: data.country ?? "",
-      message: data.message ?? "",
+      email: data.email,
+      whatsapp: data.whatsapp,
       createdAt: new Date().toISOString(),
     };
     let lead: Lead;
@@ -613,7 +612,7 @@ export class MemStorage implements IStorage {
       const [row] = await db.insert(leadsTable).values(base).returning();
       lead = row as Lead;
     } else {
-      lead = { id: this.leadIds++, ...base };
+      lead = { id: this.leadIds++, contact: "", country: "", message: "", ...base };
     }
     this.leads.set(lead.id, lead);
     this.leadIds = Math.max(this.leadIds, lead.id + 1);

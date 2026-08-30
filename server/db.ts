@@ -61,11 +61,13 @@ export async function ensureSchema() {
     CREATE TABLE IF NOT EXISTS leads (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL,
-      contact TEXT NOT NULL,
+      contact TEXT NOT NULL DEFAULT '',
       country TEXT NOT NULL DEFAULT '',
       message TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL
     );
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS email TEXT NOT NULL DEFAULT '';
+    ALTER TABLE leads ADD COLUMN IF NOT EXISTS whatsapp TEXT NOT NULL DEFAULT '';
     CREATE TABLE IF NOT EXISTS feedback (
       id SERIAL PRIMARY KEY,
       name TEXT NOT NULL DEFAULT '',

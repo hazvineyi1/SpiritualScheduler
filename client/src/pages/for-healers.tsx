@@ -135,7 +135,7 @@ function ProcessDemo() {
         .demo-progress-fill { animation: demoProgressFill ${STEP_MS}ms linear; }
       `}</style>
 
-      <div className="grid md:grid-cols-2 gap-5 items-center bg-white rounded-2xl border p-4 sm:p-5" style={{ borderColor: BORDER }}>
+      <div className="grid md:grid-cols-2 gap-4 items-center bg-white rounded-2xl border p-3 sm:p-4" style={{ borderColor: BORDER }}>
         <div>
           <span className="text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full"
             style={{ background: current.actor === "Healer" ? HERO : "#fbf3ee", color: current.actor === "Healer" ? GN : "#a24a2e" }}>
@@ -177,7 +177,7 @@ function ProcessDemo() {
 
 export default function ForHealers() {
   useVisitTracking("/for-healers");
-  const [form, setForm] = useState({ name: "", contact: "" });
+  const [form, setForm] = useState({ name: "", email: "", whatsapp: "" });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -216,61 +216,61 @@ export default function ForHealers() {
       </nav>
 
       {/* HERO */}
-      <section className="max-w-3xl mx-auto px-4 pt-10 pb-8 text-center">
-        <h1 className="text-2xl sm:text-4xl font-semibold leading-tight mb-3" style={{ color: DARK }}>
+      <section className="max-w-3xl mx-auto px-4 pt-6 pb-5 text-center">
+        <h1 className="text-xl sm:text-3xl font-semibold leading-tight mb-2" style={{ color: DARK }}>
           Your gift deserves more than a flooded WhatsApp inbox.
         </h1>
-        <p className="text-sm sm:text-base max-w-lg mx-auto mb-6" style={{ color: "#6b5f4a" }}>
-          One hub for bookings, schedule, and payments. Every client accounted for — WhatsApp back to just being a chat app.
+        <p className="text-xs sm:text-sm max-w-md mx-auto mb-4" style={{ color: "#6b5f4a" }}>
+          One hub for bookings, schedule, and payments. WhatsApp back to just being a chat app.
         </p>
         <Link href="/signup">
-          <Button className="h-11 px-6 text-white text-sm" style={{ background: GN }}>Create your free hub <ArrowRight className="h-4 w-4 ml-1.5" /></Button>
+          <Button className="h-10 px-6 text-white text-sm" style={{ background: GN }}>Create your free hub <ArrowRight className="h-4 w-4 ml-1.5" /></Button>
         </Link>
-        <p className="text-xs mt-3" style={{ color: GOLD, fontWeight: 600 }}>Sign up in September for 3 months free.</p>
+        <p className="text-xs mt-2" style={{ color: GOLD, fontWeight: 600 }}>Sign up in September for 3 months free.</p>
       </section>
 
       {/* THE "VIDEO" — auto-playing walkthrough, client side then healer side */}
-      <section className="max-w-5xl mx-auto px-4 pb-10">
-        <h2 className="text-lg sm:text-xl font-semibold text-center mb-1" style={{ color: DARK }}>Watch the whole loop</h2>
-        <p className="text-xs text-center max-w-md mx-auto mb-5" style={{ color: "#6b5f4a" }}>
-          From the client's first tap to the confirmation in your hand.
-        </p>
+      <section className="max-w-5xl mx-auto px-4 pb-6">
+        <h2 className="text-base sm:text-lg font-semibold text-center mb-3" style={{ color: DARK }}>Watch the whole loop</h2>
         <ProcessDemo />
       </section>
 
       {/* COMPACT TRUST ROW */}
-      <div className="max-w-3xl mx-auto px-4 pb-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+      <div className="max-w-3xl mx-auto px-4 pb-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-1.5">
         <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><Lock className="h-3.5 w-3.5" style={{ color: GN }} /> Independent &amp; private</span>
         <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><ShieldCheck className="h-3.5 w-3.5" style={{ color: GN }} /> ZINATHA verification available</span>
         <span className="text-xs flex items-center gap-1.5" style={{ color: "#6b5f4a" }}><MessageCircle className="h-3.5 w-3.5" style={{ color: GN }} /> WhatsApp stays central</span>
       </div>
 
       {/* CTA + INTEREST FORM, combined */}
-      <section className="py-12 px-4" style={{ background: GN }}>
+      <section className="py-8 px-4" style={{ background: GN }}>
         <div className="max-w-md mx-auto text-center">
-          <h2 className="text-xl sm:text-2xl font-semibold text-white mb-2">Give your practice room to breathe.</h2>
-          <p className="text-xs mb-5" style={{ color: "#c9d6cc" }}>No commitment. Payments go straight to you, always. 3 months free if you sign up in September.</p>
+          <h2 className="text-lg sm:text-xl font-semibold text-white mb-1.5">Give your practice room to breathe.</h2>
+          <p className="text-xs mb-4" style={{ color: "#c9d6cc" }}>No commitment. Payments go straight to you, always.</p>
           <Link href="/signup">
-            <Button className="h-11 px-8 text-sm w-full sm:w-auto" style={{ background: "white", color: GN }}>Create Your Free Hub</Button>
+            <Button className="h-10 px-8 text-sm w-full sm:w-auto" style={{ background: "white", color: GN }}>Create Your Free Hub</Button>
           </Link>
 
-          <div className="mt-8 pt-8 border-t border-white/20">
+          <div className="mt-5 pt-5 border-t border-white/20">
             {submitted ? (
               <p className="text-sm text-white/90">Thank you — you're on our list. We'll reach out soon.</p>
             ) : (
               <>
-                <p className="text-xs text-white/80 mb-3">Not ready yet? Leave your details and we'll reach out — no hub created until you are.</p>
-                <form onSubmit={handleInterestSubmit} className="flex flex-col sm:flex-row gap-2">
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" required className="bg-white" />
-                  <Input value={form.contact} onChange={e => setForm(f => ({ ...f, contact: e.target.value }))} placeholder="WhatsApp or email" required className="bg-white" />
-                  <Button type="submit" className="text-white flex-shrink-0" style={{ background: GOLD }} disabled={submitting}>
-                    {submitting ? "…" : "I'm Interested"}
+                <p className="text-xs text-white/80 mb-2.5">Not ready yet? Leave your details — no hub created until you are.</p>
+                <form onSubmit={handleInterestSubmit} className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" required className="bg-white" />
+                    <Input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="Email" required className="bg-white" />
+                    <Input value={form.whatsapp} onChange={e => setForm(f => ({ ...f, whatsapp: e.target.value }))} placeholder="WhatsApp number" required className="bg-white" />
+                  </div>
+                  <Button type="submit" className="w-full text-white" style={{ background: GOLD }} disabled={submitting}>
+                    {submitting ? "Sending…" : "I'm Interested"}
                   </Button>
                 </form>
                 {error && <p className="text-xs mt-2 text-red-200">{error}</p>}
               </>
             )}
-            <p className="text-xs mt-4" style={{ color: "#c9d6cc" }}>
+            <p className="text-xs mt-3" style={{ color: "#c9d6cc" }}>
               Prefer email? Reach us at{" "}
               <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("I'm interested in African Spiritual Hub")}`}
                 className="underline inline-flex items-center gap-1 text-white">
@@ -281,7 +281,7 @@ export default function ForHealers() {
         </div>
       </section>
 
-      <footer className="text-center text-xs py-5 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
+      <footer className="text-center text-xs py-4 border-t" style={{ borderColor: BORDER, color: "#8a7d63" }}>
         <span style={{ color: GN }}>African Spiritual Hub</span> · Every practitioner's hub is independent and self-contained
       </footer>
     </div>

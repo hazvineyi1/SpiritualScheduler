@@ -113,7 +113,9 @@ export interface DaySlot {
 export const leads = pgTable("leads", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  contact: text("contact").notNull(),
+  email: text("email").notNull().default(""),
+  whatsapp: text("whatsapp").notNull().default(""),
+  contact: text("contact").notNull().default(""),
   country: text("country").notNull().default(""),
   message: text("message").notNull().default(""),
   createdAt: text("created_at").notNull(),
@@ -121,9 +123,8 @@ export const leads = pgTable("leads", {
 
 export const insertLeadSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  contact: z.string().min(5, "Please share a WhatsApp number or email"),
-  country: z.string().optional(),
-  message: z.string().optional(),
+  email: z.string().email("Please enter a valid email"),
+  whatsapp: z.string().min(5, "Please share a WhatsApp number"),
 });
 
 export type Lead = typeof leads.$inferSelect;

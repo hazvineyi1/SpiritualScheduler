@@ -116,9 +116,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         "info@synops-consulting.com",
         `New interest form submission from ${lead.name}`,
         `${lead.name} left their details on the healer marketing page:\n\n` +
-          `Contact: ${lead.contact}\n` +
-          (lead.country ? `Country: ${lead.country}\n` : "") +
-          (lead.message ? `Message: "${lead.message}"\n` : "") +
+          `Email: ${lead.email}\n` +
+          `WhatsApp: ${lead.whatsapp}\n` +
           `\nSubmitted ${new Date(lead.createdAt).toLocaleString()}.`,
       );
     } catch (err) {

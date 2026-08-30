@@ -13,9 +13,8 @@ const DARK    = "#1c1712";
 interface Lead {
   id: number;
   name: string;
-  contact: string;
-  country: string;
-  message: string;
+  email: string;
+  whatsapp: string;
   createdAt: string;
 }
 
@@ -152,8 +151,7 @@ export default function AdminLeads() {
                         <p className="text-sm font-semibold" style={{ color: DARK }}>{l.name}</p>
                         <p className="text-[11px]" style={{ color: "#9a8e7e" }}>{new Date(l.createdAt).toLocaleString()}</p>
                       </div>
-                      <p className="text-xs mb-1" style={{ color: "#6b5f4a" }}>{l.contact}{l.country ? ` · ${l.country}` : ""}</p>
-                      {l.message && <p className="text-xs mt-2 italic" style={{ color: "#8a7d6b" }}>"{l.message}"</p>}
+                      <p className="text-xs mb-1" style={{ color: "#6b5f4a" }}>{l.email} · {l.whatsapp}</p>
                     </div>
                   ))}
                 </div>
