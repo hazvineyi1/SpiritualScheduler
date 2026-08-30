@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Link, useParams, useLocation } from "wouter";
+import { Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -261,7 +261,6 @@ function CalendarView({ appointments }: { appointments: Appointment[] }) {
 
 export default function Dashboard() {
   const { slug } = useParams<{ slug: string }>();
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const qc = useQueryClient();
   const [email, setEmail] = useState("");
@@ -283,12 +282,18 @@ export default function Dashboard() {
     },
     retry: false,
   });
-  const isLoggedIn = !!me;
+  // Strict: this dashboard belongs to exactly one healer — the one named
+  // in the URL. Being logged in as anyone else does not count as being
+  // logged in here.
+  const isLoggedIn = !!me && me.slug === slug;
 
-  // If signed in as a different hub than the one in the URL, send the
-  // browser to that healer's own dashboard rather than showing a mismatch.
+  // If a *different* healer's session is active on this URL, that stale
+  // session is cleared automatically so the login form for THIS hub shows
+  // cleanly — never substitute a different healer's dashboard.
   useEffect(() => {
-    if (me && me.slug !== slug) navigate(`/${me.slug}/dashboard`);
+    if (me && me.slug !== slug) {
+      fetch("/api/auth/logout", { method: "POST", credentials: "include" }).finally(() => qc.clear());
+    }
   }, [me, slug]);
 
   const login = useMutation({
@@ -301,10 +306,16 @@ export default function Dashboard() {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) throw new Error(json.error || "Sign in failed");
+      if (json.data.slug !== slug) {
+        // Correct credentials, but for a different hub than this URL —
+        // don't let this session take over this dashboard either.
+        await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+        throw new Error("Those credentials belong to a different hub.");
+      }
       return json.data;
     },
     onSuccess: () => { setLoginError(""); setPassword(""); qc.clear(); },
-    onError: (e: Error) => setLoginError(e.message),
+    onError: (e: Error) => { setLoginError(e.message); qc.clear(); },
   });
 
   const logout = useMutation({
