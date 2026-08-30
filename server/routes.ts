@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SlotUnavailableError, NotFoundError } from "./storage";
 import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema, insertLeadSchema, insertFeedbackSchema } from "@shared/schema";
+import { sendNotificationEmail } from "./services/email";
 import { ZodError } from "zod";
 import type { Request, Response, NextFunction } from "express";
 
@@ -117,6 +118,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = insertFeedbackSchema.parse(req.body);
       const entry = await storage.createFeedback(data);
       res.json({ success: true, data: entry });
+      // Fire-and-forget: the submission has already succeeded above either way.
+      sendNotificationEmail(
+        "info@synops-consulting.com",
+        `New feedback${entry.name ? ` from ${entry.name}` : ""}`,
+        `${entry.name || "Someone"} left feedback on African Spiritual Hub:\n\n"${entry.message}"\n\nSubmitted ${new Date(entry.createdAt).toLocaleString()}.`,
+      );
     } catch (err) {
       if (err instanceof ZodError) {
         return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
