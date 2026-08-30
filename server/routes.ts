@@ -88,6 +88,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const data = insertLeadSchema.parse(req.body);
       const lead = await storage.createLead(data);
       res.json({ success: true, data: lead });
+      // Fire-and-forget: the submission has already succeeded above either way.
+      sendNotificationEmail(
+        "info@synops-consulting.com",
+        `New interest form submission from ${lead.name}`,
+        `${lead.name} left their details on the healer marketing page:\n\n` +
+          `Contact: ${lead.contact}\n` +
+          (lead.country ? `Country: ${lead.country}\n` : "") +
+          (lead.message ? `Message: "${lead.message}"\n` : "") +
+          `\nSubmitted ${new Date(lead.createdAt).toLocaleString()}.`,
+      );
     } catch (err) {
       if (err instanceof ZodError) {
         return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
