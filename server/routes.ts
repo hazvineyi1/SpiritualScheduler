@@ -9,15 +9,24 @@ import { sendNotificationEmail } from "./services/email";
 // location, not a broken request.
 async function geolocateIp(ip: string): Promise<{ city: string; country: string }> {
   const cleaned = ip.replace(/^::ffff:/, "");
+  console.log(`[geolocate] raw ip: "${ip}" cleaned: "${cleaned}"`);
   if (!cleaned || cleaned === "127.0.0.1" || cleaned === "::1" || cleaned.startsWith("10.") || cleaned.startsWith("192.168.")) {
+    console.log(`[geolocate] skipped — looks private/local`);
     return { city: "", country: "" };
   }
   try {
     const res = await fetch(`https://ipapi.co/${cleaned}/json/`, { signal: AbortSignal.timeout(2500) });
-    if (!res.ok) return { city: "", country: "" };
+    console.log(`[geolocate] fetch status: ${res.status}`);
+    if (!res.ok) {
+      const body = await res.text();
+      console.log(`[geolocate] non-ok body: ${body.slice(0, 200)}`);
+      return { city: "", country: "" };
+    }
     const data = await res.json();
+    console.log(`[geolocate] response:`, JSON.stringify(data).slice(0, 300));
     return { city: data.city || "", country: data.country_name || "" };
-  } catch {
+  } catch (err) {
+    console.log(`[geolocate] error:`, err instanceof Error ? err.message : err);
     return { city: "", country: "" };
   }
 }
