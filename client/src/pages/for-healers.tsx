@@ -171,6 +171,74 @@ export default function ForHealers() {
         </div>
       </section>
 
+      {/* SEE IT IN ACTION — calendar → payment → hub */}
+      <section className="max-w-5xl mx-auto px-4 pb-16">
+        <h2 className="text-2xl sm:text-3xl font-semibold text-center mb-2" style={{ color: DARK }}>Here's exactly what your client sees</h2>
+        <p className="text-sm text-center max-w-xl mx-auto mb-10" style={{ color: "#6b5f4a" }}>
+          Three steps, no app to download, no account to create.
+        </p>
+        <div className="grid md:grid-cols-3 gap-5">
+          {/* Step 1: calendar */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>1. Picks a time</p>
+            <div className="bg-white rounded-xl border p-3" style={{ borderColor: BORDER }}>
+              <p className="text-xs font-medium mb-2" style={{ color: DARK }}>Tuesday, 3 September</p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { label: "09:00", state: "booked" },
+                  { label: "10:00", state: "open" },
+                  { label: "11:00", state: "open" },
+                  { label: "12:00", state: "selected" },
+                  { label: "14:00", state: "booked" },
+                  { label: "15:00", state: "open" },
+                ].map((s, i) => (
+                  <div key={i} className="rounded-md py-1.5 text-center text-[11px] font-medium border"
+                    style={{
+                      borderColor: s.state === "selected" ? GN : BORDER,
+                      background: s.state === "selected" ? GN : s.state === "booked" ? "#f0ece4" : "white",
+                      color: s.state === "selected" ? "white" : s.state === "booked" ? "#b0a898" : DARK,
+                    }}>
+                    {s.label}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <p className="text-xs mt-3" style={{ color: "#6b5f4a" }}>Only your genuinely open slots ever show up — never a double-booking.</p>
+          </div>
+
+          {/* Step 2: payment */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>2. Pays you directly</p>
+            <div className="bg-white rounded-xl border p-3 space-y-2" style={{ borderColor: BORDER }}>
+              <div className="rounded-md border px-2.5 py-2 flex items-center justify-between" style={{ borderColor: GN, background: HERO }}>
+                <span className="text-xs font-medium" style={{ color: DARK }}>EcoCash USD</span>
+                <CheckCircle2 className="h-3.5 w-3.5" style={{ color: GN }} />
+              </div>
+              <div className="rounded-md border px-2.5 py-2 text-xs" style={{ borderColor: BORDER, color: "#8a7d6b" }}>InnBucks</div>
+              <div className="rounded-md border-2 border-dashed px-2.5 py-3 text-center" style={{ borderColor: BORDER }}>
+                <p className="text-[11px] font-medium flex items-center justify-center gap-1" style={{ color: GN }}><CheckCircle2 className="h-3 w-3" /> Proof of payment attached</p>
+              </div>
+            </div>
+            <p className="text-xs mt-3" style={{ color: "#6b5f4a" }}>Money moves client-to-healer, straight to your own EcoCash or InnBucks. The platform never touches it.</p>
+          </div>
+
+          {/* Step 3: healer verifies */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: GOLD }}>3. You verify, it's locked in</p>
+            <div className="bg-white rounded-xl border p-3" style={{ borderColor: BORDER }}>
+              <div className="rounded-md border px-2.5 py-2 mb-2" style={{ borderColor: BORDER, background: HERO }}>
+                <p className="text-[11px] font-semibold" style={{ color: DARK }}>Ancestral Cleansing</p>
+                <p className="text-[10px]" style={{ color: "#8a7d6b" }}>Rutendo C. · $30 · ref MKT-2</p>
+              </div>
+              <div className="text-white rounded-md py-1.5 text-center text-[11px] font-medium" style={{ background: GN }}>
+                ✓ Verify
+              </div>
+            </div>
+            <p className="text-xs mt-3" style={{ color: "#6b5f4a" }}>One tap confirms the booking and locks it into your schedule automatically.</p>
+          </div>
+        </div>
+      </section>
+
       {/* HOW IT WORKS */}
       <section className="pb-16" style={{ background: HERO }}>
         <div className="max-w-5xl mx-auto px-4 py-14">
@@ -262,7 +330,19 @@ export default function ForHealers() {
       {/* FINAL CTA */}
       <section className="text-center py-16 px-4" style={{ background: GN }}>
         <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-3">Give your practice room to breathe.</h2>
-        <p className="text-sm mb-7" style={{ color: "#c9d6cc" }}>Free to list. Set up in minutes. Sign up in September and your first 3 months are free.</p>
+        <p className="text-sm mb-6" style={{ color: "#c9d6cc" }}>Sign up in September and your first 3 months are free.</p>
+        <div className="flex items-center justify-center gap-x-6 gap-y-2 flex-wrap mb-8 max-w-lg mx-auto">
+          {[
+            "No commitment, cancel anytime",
+            "Client details stay private to your hub",
+            "Just organized scheduling",
+            "Payments go straight to you, always",
+          ].map((t, i) => (
+            <span key={i} className="text-xs flex items-center gap-1.5 text-white/90">
+              <CheckCircle2 className="h-3.5 w-3.5" style={{ color: "#e6d7b3" }} /> {t}
+            </span>
+          ))}
+        </div>
         <Link href="/signup">
           <Button className="h-11 px-8 text-sm" style={{ background: "white", color: GN }}>Create Your Free Hub</Button>
         </Link>
