@@ -156,15 +156,90 @@ export class MemStorage implements IStorage {
     };
   }
 
-  // Loads every healer and appointment from Postgres into the in-memory
-  // maps (write-through cache), or — with no database configured — falls
-  // back to seeding VaShava in memory only, matching the app's original
-  // behavior for local development.
+  // Elliestrator Botanica's real catalog, extracted from her WhatsApp
+  // Business profile and onboarded as the platform's second hub.
+  private elliestratorSeed(): Omit<Healer, "id"> {
+    return {
+      slug: "elliestrator-botanica",
+      email: "elliestratorbotanica@gmail.com",
+      password: "botanica123",
+      name: "Elliestrator Botanica",
+      tagline: "Bold Rituals for Real Life",
+      location: "Zimbabwe",
+      whatsapp: "263783402890",
+      country: "zimbabwe",
+      avatarUrl: "/images/elliestrator-avatar.jpg",
+      headerImageUrl: "/images/elliestrator-header.jpg",
+      zinathaVerified: false,
+      shopEnabled: true,
+      readings: [
+        { id: 1, name: "Getting To Know Yourself", category: "Tarot & Card Readings", price: 80, description: "Keys to self-discovery: what makes you unique, how to unlock your magical powers, your creativity, and your compassion.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 2, name: "A Spread for Honesty with Yourself", category: "Tarot & Card Readings", price: 50, description: "An honest look at where you stand with yourself right now.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 3, name: "The Next Few Months", category: "Tarot & Card Readings", price: 60, description: "A predictive spread looking ahead at what's coming.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 4, name: "1 Question Reading", category: "Tarot & Card Readings", price: 15, description: "A focused one-card reading for one direct question.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 5, name: "Gifts From Ancestors", category: "Tarot & Card Readings", price: 60, description: "Looking at the gifts you carry from your ancestors and how to honor them.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 6, name: "Nightmare Spread", category: "Tarot & Card Readings", price: 50, description: "Had a nightmare and think it means something? This spread digs into it.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 7, name: "Dream Interpretation Spread", category: "Tarot & Card Readings", price: 40, description: "Figuring out the signs you're being given through your dreams.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false, customIntake: [{ field: "dream", label: "Describe your dream in as much detail as possible" }] },
+        { id: 8, name: "Healing A Toxic Workplace Spread", category: "Tarot & Card Readings", price: 60, description: "Understand the root of a difficult work environment and how to protect your peace there.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 9, name: "Stress-Check Spread", category: "Tarot & Card Readings", price: 40, description: "Helps you put a name to why you're feeling so stressed right now.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 10, name: "General Love Reading", category: "Tarot & Card Readings", price: 40, description: "An in-depth general love reading.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 11, name: "Spirit Guide Reading", category: "Tarot & Card Readings", price: 50, description: "Connect to your spirit guide and find out who they are.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 12, name: "How To Face Your Fears", category: "Tarot & Card Readings", price: 45, description: "Designed to help you face something you've been avoiding.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 13, name: "Why Can't I Find My Love?", category: "Tarot & Card Readings", price: 50, description: "What's getting in the way of you settling into love.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 14, name: "Going Through A Career Shift?", category: "Tarot & Card Readings", price: 70, description: "What you should be doing in your career right now.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 15, name: "Attracting A Healthy Relationship", category: "Tarot & Card Readings", price: 60, description: "How you can attract a healthy relationship.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 16, name: "Career Card Reading", category: "Tarot & Card Readings", price: 50, description: "A career reading to help align you with your path.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 17, name: "Why Am I So Insecure?", category: "Tarot & Card Readings", price: 50, description: "How to get past insecurities.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 18, name: "Couples Reading (1hr Each)", category: "Tarot & Card Readings", price: 300, description: "One hour of reading time for each person in the couple.", formats: ["video", "audio"], isAdult: false, isFixed: true },
+        { id: 19, name: "Boosting Your Intimate Side", category: "Intimacy & Relationships", price: 40, description: "Tips to help you feel more confident and adventurous with your partner.", formats: ["video", "audio", "chat", "async"], isAdult: true, isFixed: false },
+        { id: 20, name: "Love Spells", category: "Spells & Rituals", price: 120, description: "A spell to help draw love toward you.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 21, name: "Cord Cutting Ritual", category: "Spells & Rituals", price: 120, description: "Releases lingering energetic ties to a person or situation.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 22, name: "Remove 3rd Party", category: "Spells & Rituals", price: 120, description: "A powerful breakup spell to remove a third party from a relationship.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 23, name: "Stop F*ing Around", category: "Spells & Rituals", price: 100, description: "For when you want a partner to commit and stop stringing you along.", formats: ["video", "audio", "chat", "async"], isAdult: true, isFixed: false },
+        { id: 24, name: "Leave Me Alone / Banishing Spell", category: "Spells & Rituals", price: 100, description: "A banishing spell to make someone leave you alone for good.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 25, name: "Protection Spell", category: "Spells & Rituals", price: 100, description: "For when you're feeling vulnerable or threatened and need spiritual protection.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+        { id: 26, name: "Red Hot Intimacy", category: "Spells & Rituals", price: 120, description: "For igniting passion and intimacy with someone you have your sights set on.", formats: ["video", "audio", "chat", "async"], isAdult: true, isFixed: false },
+        { id: 27, name: "Shut Them Up", category: "Spells & Rituals", price: 120, description: "Intended to silence gossip and negative talk about you.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
+      ],
+      products: [
+        { id: 1, name: "Evil Eye Bracelet", price: 10, description: "Protection from negative energy and jealousy." },
+        { id: 2, name: "Carnelian Bracelet", price: 10, description: "Passion, courage, and protection." },
+        { id: 3, name: "Black Tourmaline Bracelet", price: 10, description: "Crystals are able to absorb and release energy." },
+        { id: 4, name: "Rose Quartz Bracelet", price: 10, description: "Believed to offer several benefits for love and self-compassion." },
+        { id: 5, name: "Citrine Bracelet", price: 20, description: "To attract abundance and luck." },
+        { id: 6, name: "Pure Loban", price: 10, description: "For spiritual and energetic cleansing uses." },
+        { id: 7, name: "Lapis Lazuli Crystal Bracelet", price: 20, description: "Crystals are able to absorb and release energy." },
+        { id: 8, name: "White Howlite Bracelet", price: 15, description: "Crystals are able to absorb and release energy." },
+        { id: 9, name: "Moonstone Bracelet", price: 10, description: "Crystals are able to absorb and release energy." },
+        { id: 10, name: "Moss Agate Bracelet", price: 10, description: "Crystals are able to absorb and release energy." },
+        { id: 11, name: "Amethyst Crystal Bracelet", price: 15, description: "Can be beaded or chipped." },
+        { id: 12, name: "Tiger's Eye Bracelet", price: 10, description: "100% authentic crystals." },
+        { id: 13, name: "Custom Crystal Bracelet", price: 20, description: "Build your own — 100% authentic crystals." },
+        { id: 14, name: "Turquoise Crystal Bracelet", price: 15, description: "Crystals are able to absorb and release energy." },
+        { id: 15, name: "Gimme All Tha Love", price: 15, description: "Aura cleanser: helps with self-love and attracting or protecting relationships." },
+        { id: 16, name: "Bring In Tha Money", price: 15, description: "Aura cleanser for business luck and closing deals." },
+        { id: 17, name: "Vibe Spotless & Sparkling", price: 20, description: "Aura cleanser to help clear out bad energy." },
+        { id: 18, name: "Honeypot Yoni Oil", price: 10, description: "Feminine intimate wellness oil." },
+        { id: 19, name: "Silky Kola Syrup", price: 15, description: "A popular aphrodisiac syrup." },
+        { id: 20, name: "Buzzz Syrup", price: 15, description: "Helps with stamina and performance." },
+        { id: 21, name: "Main Character Domination Oil", price: 30, description: "For stepping into your confidence and taking control." },
+        { id: 22, name: "Road Opener Oil", price: 15, description: "Clears the path ahead of obstacles." },
+        { id: 23, name: "Back To Sender Oil", price: 20, description: "A protective oil to send negative energy back to its source." },
+      ],
+      availability: { ...DEFAULT_AVAILABILITY },
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+
   async initialize(): Promise<void> {
     if (!db) {
       const seed = this.vashavaSeed();
       const vashava: Healer = { id: this.healerIds++, ...seed };
       this.healers.set(vashava.id, vashava);
+      const ellieSeed = this.elliestratorSeed();
+      const ellie: Healer = { id: this.healerIds++, ...ellieSeed };
+      this.healers.set(ellie.id, ellie);
       return;
     }
 
@@ -178,6 +253,17 @@ export class MemStorage implements IStorage {
     for (const row of healerRows) {
       this.healers.set(row.id, row as Healer);
       this.healerIds = Math.max(this.healerIds, row.id + 1);
+    }
+
+    // One-time onboarding: add Elliestrator Botanica as the platform's
+    // second hub if she isn't already in the database (idempotent — safe
+    // to run on every startup, only inserts once).
+    const hasEllie = Array.from(this.healers.values()).some(h => h.slug === "elliestrator-botanica");
+    if (!hasEllie) {
+      const [inserted] = await db.insert(healersTable).values(this.elliestratorSeed()).returning();
+      const ellie = inserted as Healer;
+      this.healers.set(ellie.id, ellie);
+      this.healerIds = Math.max(this.healerIds, ellie.id + 1);
     }
 
     // One-time backfill: healers created before the country field existed
