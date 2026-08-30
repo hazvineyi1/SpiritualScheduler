@@ -16,14 +16,16 @@ const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 
 const SUPPORT_EMAIL = "info@synops-consulting.com";
-const STEP_MS = 4000;
+const STEP_MS = 2200;
 
-// ---- The "video" walkthrough: five frames, alternating client and healer,
-// auto-advancing like a short product demo.
+// Quick-cut, TikTok-paced walkthrough: five frames, alternating client and
+// healer, auto-advancing fast. Payment methods shown are a deliberate mix
+// (EcoCash, M-Pesa) so it reads as "your mobile money, whichever it is,"
+// not one country's system.
 const STEPS = [
   {
     actor: "Client", title: "Picks a time",
-    body: "Only genuinely open slots show up — never a double-booking.",
+    body: "Only real open slots show up. No double bookings, ever.",
     render: () => (
       <div className="bg-white rounded-xl border p-3" style={{ borderColor: BORDER }}>
         <p className="text-xs font-medium mb-2" style={{ color: DARK }}>Tuesday, 3 September</p>
@@ -48,14 +50,14 @@ const STEPS = [
   },
   {
     actor: "Client", title: "Pays you directly",
-    body: "Money moves client-to-healer, straight to your EcoCash or InnBucks. The platform never touches it.",
+    body: "Money moves straight to your mobile money. The platform never touches a cent.",
     render: () => (
       <div className="bg-white rounded-xl border p-3 space-y-2" style={{ borderColor: BORDER }}>
         <div className="rounded-md border px-2.5 py-2 flex items-center justify-between" style={{ borderColor: GN, background: HERO }}>
           <span className="text-xs font-medium" style={{ color: DARK }}>EcoCash USD</span>
           <CheckCircle2 className="h-3.5 w-3.5" style={{ color: GN }} />
         </div>
-        <div className="rounded-md border px-2.5 py-2 text-xs" style={{ borderColor: BORDER, color: "#8a7d6b" }}>InnBucks</div>
+        <div className="rounded-md border px-2.5 py-2 text-xs" style={{ borderColor: BORDER, color: "#8a7d6b" }}>M-Pesa</div>
         <div className="rounded-md border-2 border-dashed px-2.5 py-3 text-center" style={{ borderColor: BORDER }}>
           <p className="text-[11px] font-medium flex items-center justify-center gap-1" style={{ color: GN }}><CheckCircle2 className="h-3 w-3" /> Proof of payment attached</p>
         </div>
@@ -64,7 +66,7 @@ const STEPS = [
   },
   {
     actor: "Healer", title: "It lands in your queue",
-    body: "Every pending payment waits in one organized list — never buried in a chat thread.",
+    body: "Every payment waits in one place. Never buried in a chat.",
     render: () => (
       <div className="bg-white rounded-xl border p-3" style={{ borderColor: BORDER }}>
         <div className="flex items-center justify-between mb-2">
@@ -80,7 +82,7 @@ const STEPS = [
   },
   {
     actor: "Healer", title: "One tap to verify",
-    body: "Confirm the payment and the booking locks straight into your schedule.",
+    body: "Confirm it, done. Locked straight into your schedule.",
     render: () => (
       <div className="bg-white rounded-xl border p-3" style={{ borderColor: BORDER }}>
         <div className="rounded-md border px-2.5 py-2 mb-2" style={{ borderColor: BORDER, background: HERO }}>
@@ -95,7 +97,7 @@ const STEPS = [
   },
   {
     actor: "Both", title: "Session confirmed",
-    body: "A WhatsApp message goes out automatically — nothing left for either of you to type.",
+    body: "WhatsApp sends the confirmation automatically. Nothing to type.",
     render: () => (
       <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
         <div className="px-3 py-2 flex items-center justify-between" style={{ background: HERO }}>
@@ -202,7 +204,7 @@ export default function ForHealers() {
     <div style={{ background: BG, color: DARK }}>
       {/* SEPTEMBER PROMO BANNER */}
       <div className="text-center text-xs sm:text-sm font-medium py-2 px-4 text-white" style={{ background: GOLD }}>
-        🎁 Sign up in September — your first 3 months are free.
+        🎁 Sign up in September, your first 3 months are free.
       </div>
 
       {/* NAV */}
@@ -210,18 +212,19 @@ export default function ForHealers() {
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/"><span className="font-semibold text-sm cursor-pointer" style={{ color: DARK }}>African Spiritual Hub</span></Link>
           <Link href="/signup">
-            <Button size="sm" className="h-8 text-xs text-white" style={{ background: GN }}>List Your Practice — Free</Button>
+            <Button size="sm" className="h-8 text-xs text-white" style={{ background: GN }}>List Your Practice, Free</Button>
           </Link>
         </div>
       </nav>
 
       {/* HERO */}
       <section className="max-w-3xl mx-auto px-4 pt-6 pb-5 text-center">
+        <p className="text-xs uppercase tracking-[0.2em] mb-2 font-semibold" style={{ color: GOLD }}>For healers across Africa</p>
         <h1 className="text-xl sm:text-3xl font-semibold leading-tight mb-2" style={{ color: DARK }}>
           Your gift deserves more than a flooded WhatsApp inbox.
         </h1>
         <p className="text-xs sm:text-sm max-w-md mx-auto mb-4" style={{ color: "#6b5f4a" }}>
-          One hub for bookings, schedule, and payments. WhatsApp back to just being a chat app.
+          One hub for bookings, schedules, and payments, wherever you are in Africa.
         </p>
         <Link href="/signup">
           <Button className="h-10 px-6 text-white text-sm" style={{ background: GN }}>Create your free hub <ArrowRight className="h-4 w-4 ml-1.5" /></Button>
@@ -229,7 +232,7 @@ export default function ForHealers() {
         <p className="text-xs mt-2" style={{ color: GOLD, fontWeight: 600 }}>Sign up in September for 3 months free.</p>
       </section>
 
-      {/* THE "VIDEO" — auto-playing walkthrough, client side then healer side */}
+      {/* THE "VIDEO": quick-cut, auto-playing walkthrough, client side then healer side */}
       <section className="max-w-5xl mx-auto px-4 pb-6">
         <h2 className="text-base sm:text-lg font-semibold text-center mb-3" style={{ color: DARK }}>Watch the whole loop</h2>
         <ProcessDemo />
@@ -252,10 +255,10 @@ export default function ForHealers() {
 
           <div className="mt-5 pt-5 border-t border-white/20">
             {submitted ? (
-              <p className="text-sm text-white/90">Thank you — you're on our list. We'll reach out soon.</p>
+              <p className="text-sm text-white/90">Thank you, you're on our list. We'll reach out soon.</p>
             ) : (
               <>
-                <p className="text-xs text-white/80 mb-2.5">Not ready yet? Leave your details — no hub created until you are.</p>
+                <p className="text-xs text-white/80 mb-2.5">Not ready yet? Leave your details. No hub created until you are.</p>
                 <form onSubmit={handleInterestSubmit} className="space-y-2">
                   <div className="flex flex-col sm:flex-row gap-2">
                     <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" required className="bg-white" />
