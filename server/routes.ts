@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SlotUnavailableError, NotFoundError } from "./storage";
-import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema, insertLeadSchema } from "@shared/schema";
+import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema, insertLeadSchema, insertFeedbackSchema } from "@shared/schema";
 import { ZodError } from "zod";
 import type { Request, Response, NextFunction } from "express";
 
@@ -108,6 +108,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, data: leads });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to fetch leads" });
+    }
+  });
+
+  // ---- Trial-user feedback ---------------------------------------------
+  app.post("/api/feedback", async (req, res) => {
+    try {
+      const data = insertFeedbackSchema.parse(req.body);
+      const entry = await storage.createFeedback(data);
+      res.json({ success: true, data: entry });
+    } catch (err) {
+      if (err instanceof ZodError) {
+        return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
+      }
+      res.status(500).json({ success: false, error: "Failed to submit" });
+    }
+  });
+
+  app.get("/api/feedback", async (req, res) => {
+    const key = req.header("x-admin-key");
+    const expected = process.env.ADMIN_KEY || "vashava-admin-2026";
+    if (!key || key !== expected) {
+      return res.status(401).json({ success: false, error: "Invalid admin key" });
+    }
+    try {
+      const entries = await storage.listFeedback();
+      res.json({ success: true, data: entries });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch feedback" });
     }
   });
 

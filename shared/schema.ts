@@ -128,3 +128,21 @@ export const insertLeadSchema = z.object({
 
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
+
+// ---- Trial-user feedback ---------------------------------------------------
+// Open-ended suggestions from anyone trying the platform out. Separate from
+// leads (which are prospects who haven't joined yet).
+export const feedback = pgTable("feedback", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().default(""),
+  message: text("message").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertFeedbackSchema = z.object({
+  name: z.string().optional(),
+  message: z.string().min(1, "Please share your thoughts"),
+});
+
+export type Feedback = typeof feedback.$inferSelect;
+export type InsertFeedback = z.infer<typeof insertFeedbackSchema>;

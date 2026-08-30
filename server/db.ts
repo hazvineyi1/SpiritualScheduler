@@ -66,5 +66,11 @@ export async function ensureSchema() {
       message TEXT NOT NULL DEFAULT '',
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS feedback (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL DEFAULT '',
+      message TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 }

@@ -1,8 +1,8 @@
 import {
   type Healer, type InsertHealer, type Appointment, type InsertAppointment,
   type AvailabilityConfig, type UpdateAvailability, type DaySlot, type SlotStatus,
-  type Lead, type InsertLead,
-  healers as healersTable, appointments as appointmentsTable, leads as leadsTable,
+  type Lead, type InsertLead, type Feedback, type InsertFeedback,
+  healers as healersTable, appointments as appointmentsTable, leads as leadsTable, feedback as feedbackTable,
 } from "@shared/schema";
 import { STARTER_READINGS, STARTER_PRODUCTS, type Reading, type Product } from "@shared/types";
 import { db, ensureSchema } from "./db";
@@ -93,6 +93,10 @@ export interface IStorage {
   // Interest form leads — entirely separate from healers; no login, no hub.
   createLead(data: InsertLead): Promise<Lead>;
   listLeads(): Promise<Lead[]>;
+
+  // Trial-user feedback — open-ended suggestions, separate from leads.
+  createFeedback(data: InsertFeedback): Promise<Feedback>;
+  listFeedback(): Promise<Feedback[]>;
 }
 
 // A small rotation of nature/heritage images given to new hubs as a starting
@@ -103,9 +107,11 @@ export class MemStorage implements IStorage {
   private healers: Map<number, Healer>;
   private appointments: Map<number, Appointment>;
   private leads: Map<number, Lead> = new Map();
+  private feedback: Map<number, Feedback> = new Map();
   private healerIds = 1;
   private appointmentIds = 1;
   private leadIds = 1;
+  private feedbackIds = 1;
 
   constructor() {
     this.healers = new Map();
@@ -194,6 +200,12 @@ export class MemStorage implements IStorage {
     for (const row of leadRows) {
       this.leads.set(row.id, row as Lead);
       this.leadIds = Math.max(this.leadIds, row.id + 1);
+    }
+
+    const feedbackRows = await db.select().from(feedbackTable);
+    for (const row of feedbackRows) {
+      this.feedback.set(row.id, row as Feedback);
+      this.feedbackIds = Math.max(this.feedbackIds, row.id + 1);
     }
   }
 
@@ -497,6 +509,29 @@ export class MemStorage implements IStorage {
 
   async listLeads(): Promise<Lead[]> {
     return Array.from(this.leads.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // ---- Trial-user feedback ---------------------------------------------
+  async createFeedback(data: InsertFeedback): Promise<Feedback> {
+    const base = {
+      name: data.name ?? "",
+      message: data.message,
+      createdAt: new Date().toISOString(),
+    };
+    let entry: Feedback;
+    if (db) {
+      const [row] = await db.insert(feedbackTable).values(base).returning();
+      entry = row as Feedback;
+    } else {
+      entry = { id: this.feedbackIds++, ...base };
+    }
+    this.feedback.set(entry.id, entry);
+    this.feedbackIds = Math.max(this.feedbackIds, entry.id + 1);
+    return entry;
+  }
+
+  async listFeedback(): Promise<Feedback[]> {
+    return Array.from(this.feedback.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }
 }
 
