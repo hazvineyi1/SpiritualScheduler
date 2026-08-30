@@ -124,6 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (err instanceof ZodError) {
         return res.status(400).json({ success: false, error: err.errors[0]?.message || "Validation error", details: err.errors });
       }
+      console.error("[POST /api/leads]", err);
       res.status(500).json({ success: false, error: "Failed to submit" });
     }
   });
