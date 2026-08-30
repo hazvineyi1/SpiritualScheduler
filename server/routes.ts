@@ -64,15 +64,12 @@ function publicHealer(h: Awaited<ReturnType<typeof storage.getHealer>>) {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // ---- Public directory & healer profiles ---------------------------------
+  // Disabled: this used to power the map/directory pages, which are no
+  // longer public. Listing every healer is a discovery vector on its own,
+  // so it's blocked even though the pages that called it are gone —
+  // individual healer lookup by slug (below) still works for direct links.
   app.get("/api/healers", async (req, res) => {
-    try {
-      const healers = await storage.listHealers();
-      const country = typeof req.query.country === "string" ? req.query.country.toLowerCase() : undefined;
-      const filtered = country ? healers.filter(h => h.country === country) : healers;
-      res.json({ success: true, data: filtered.map(publicHealer) });
-    } catch (err) {
-      res.status(500).json({ success: false, error: "Failed to fetch hubs" });
-    }
+    res.status(404).json({ success: false, error: "Not found" });
   });
 
   app.get("/api/healers/:slug", async (req, res) => {

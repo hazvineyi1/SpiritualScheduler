@@ -91,7 +91,6 @@ export default function Home() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3" style={{ background: BG, color: DARK }}>
         <p className="text-sm">This hub doesn't exist.</p>
-        <Link href="/"><Button size="sm" style={{ background: GN }} className="text-white">Back to African Spiritual Hub</Button></Link>
       </div>
     );
   }

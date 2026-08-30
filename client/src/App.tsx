@@ -2,26 +2,21 @@ import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
-import AfricaMap from "@/pages/africa-map";
-import CountryHub from "@/pages/country";
-import ForHealers from "@/pages/for-healers";
 import AdminLeads from "@/pages/admin-leads";
-import Feedback from "@/pages/feedback";
-import Signup from "@/pages/signup";
 import Home from "@/pages/home";
 import Book from "@/pages/book";
 import Dashboard from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 
+// Locked down: no map, no country directories, no marketing page, no
+// public feedback form, no public signup — nothing that lets someone
+// browse or discover a hub without already having its direct link.
+// Only an individual healer's own hub (and its booking flow / login)
+// resolves; everything else, including "/", falls through to NotFound.
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={AfricaMap} />
-      <Route path="/for-healers" component={ForHealers} />
       <Route path="/admin/leads" component={AdminLeads} />
-      <Route path="/feedback" component={Feedback} />
-      <Route path="/signup" component={Signup} />
-      <Route path="/country/:slug" component={CountryHub} />
       <Route path="/:slug/dashboard" component={Dashboard} />
       <Route path="/:slug/book/:readingId" component={Book} />
       <Route path="/:slug" component={Home} />

@@ -1,9 +1,8 @@
 import { useState } from "react";
-import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Inbox, MessageSquareHeart, MapPin } from "lucide-react";
+import { Inbox, MessageSquareHeart, MapPin } from "lucide-react";
 
 const BG      = "#f5efe0";
 const BORDER  = "#c9b896";
@@ -79,8 +78,6 @@ export default function AdminLeads() {
   return (
     <div className="min-h-screen" style={{ background: BG, color: DARK }}>
       <div className="max-w-3xl mx-auto px-4 py-10">
-        <Link href="/"><p className="text-xs flex items-center gap-1 mb-6" style={{ color: "#9a8e7e" }}><ChevronLeft className="h-3.5 w-3.5" /> Back to African Spiritual Hub</p></Link>
-
         {leads === null ? (
           <>
             <h1 className="text-xl font-semibold mb-1" style={{ color: DARK }}>Admin</h1>
