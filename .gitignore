@@ -8,3 +8,4 @@ vite.config.ts.*
 .env.*
 !.env.example
 *.pem
+package-lock.json
