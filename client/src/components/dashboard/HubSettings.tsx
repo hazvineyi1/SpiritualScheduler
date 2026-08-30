@@ -38,12 +38,12 @@ interface HealerProfile {
   products: Product[];
 }
 
-export default function HubSettings({ slug }: { slug: string }) {
+export default function HubSettings() {
   const { toast } = useToast();
   const qc = useQueryClient();
 
   const { data: healer, isLoading } = useQuery<HealerProfile>({
-    queryKey: [`/api/healers/${slug}`],
+    queryKey: ["/api/profile"],
   });
 
   const [profile, setProfile] = useState({ name: "", tagline: "", location: "", whatsapp: "", avatarUrl: "", headerImageUrl: "", shopEnabled: true, country: "" });
@@ -71,7 +71,7 @@ export default function HubSettings({ slug }: { slug: string }) {
       const res = await apiRequest("PUT", "/api/profile", profile);
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "Failed to save profile");
-      qc.invalidateQueries({ queryKey: [`/api/healers/${slug}`] });
+      qc.invalidateQueries({ queryKey: ["/api/profile"] });
       qc.invalidateQueries({ queryKey: ["/api/auth/me"] });
       toast({ title: "Profile saved" });
     } catch (err) {
@@ -100,7 +100,7 @@ export default function HubSettings({ slug }: { slug: string }) {
       if (!json.success) throw new Error(json.error || "Failed to save catalog");
       setReadings(json.data.readings);
       setProducts(json.data.products);
-      qc.invalidateQueries({ queryKey: [`/api/healers/${slug}`] });
+      qc.invalidateQueries({ queryKey: ["/api/profile"] });
       toast({ title: "Catalog saved", description: "Your storefront is now updated." });
     } catch (err) {
       toast({ title: "Error", description: err instanceof Error ? err.message : "Failed to save", variant: "destructive" });

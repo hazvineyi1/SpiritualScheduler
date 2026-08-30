@@ -4,6 +4,7 @@ import { Link, useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -12,7 +13,7 @@ import { FORMAT_LABELS } from "@shared/types";
 import {
   CheckCircle2, Clock, DollarSign, Users, MessageCircle, X, Calendar, List,
   LogOut, AlertCircle, Radio, PlayCircle, CheckSquare, CalendarClock, Trash2, Settings,
-  ChevronDown, ChevronRight,
+  ChevronDown, ChevronRight, MessageSquareHeart,
 } from "lucide-react";
 import { format } from "date-fns";
 import ScheduleManager from "@/components/dashboard/ScheduleManager";
@@ -267,6 +268,10 @@ export default function Dashboard() {
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
   const [filter, setFilter] = useState("all");
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [sendingFeedback, setSendingFeedback] = useState(false);
+  const [feedbackSent, setFeedbackSent] = useState(false);
 
   const { data: me, isLoading: authLoading } = useQuery<{ healerId: number; slug: string; email: string; name: string } | null>({
     queryKey: ["/api/auth/me"],
@@ -298,7 +303,7 @@ export default function Dashboard() {
       if (!res.ok || !json.success) throw new Error(json.error || "Sign in failed");
       return json.data;
     },
-    onSuccess: () => { setLoginError(""); setPassword(""); qc.invalidateQueries({ queryKey: ["/api/auth/me"] }); },
+    onSuccess: () => { setLoginError(""); setPassword(""); qc.clear(); },
     onError: (e: Error) => setLoginError(e.message),
   });
 
@@ -445,6 +450,9 @@ export default function Dashboard() {
           <span className="text-sm font-semibold" style={{ color: GN }}>{me?.name}'s Dashboard</span>
           <div className="flex items-center gap-1">
             <Link href={`/${slug}`}><Button size="sm" variant="ghost" className="h-7 text-xs" style={{ color: "#9a8e7e" }}>Storefront</Button></Link>
+            <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: GN }} onClick={() => setShowFeedback(s => !s)}>
+              <MessageSquareHeart className="h-3.5 w-3.5" /> Feedback
+            </Button>
             <Button size="sm" variant="ghost" className="h-7 text-xs gap-1" style={{ color: "#a03030" }} onClick={handleResetData} disabled={resetData.isPending}>
               <Trash2 className="h-3.5 w-3.5" /> {resetData.isPending ? "Resetting…" : "Reset Data"}
             </Button>
@@ -454,6 +462,42 @@ export default function Dashboard() {
           </div>
         </div>
       </header>
+
+      {showFeedback && (
+        <div className="border-b bg-white" style={{ borderColor: BORDER }}>
+          <div className="max-w-5xl mx-auto px-4 py-3">
+            {feedbackSent ? (
+              <p className="text-xs" style={{ color: GN }}>Thank you — your feedback was sent.</p>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2 items-start">
+                <Textarea
+                  value={feedbackText}
+                  onChange={e => setFeedbackText(e.target.value)}
+                  placeholder="What would you like to see added, changed, or fixed?"
+                  className="flex-1 text-xs"
+                  rows={2}
+                />
+                <Button
+                  size="sm"
+                  className="h-8 text-xs text-white flex-shrink-0"
+                  style={{ background: GN }}
+                  disabled={sendingFeedback || !feedbackText.trim()}
+                  onClick={async () => {
+                    setSendingFeedback(true);
+                    try {
+                      const res = await apiRequest("POST", "/api/feedback", { name: me?.name || "", message: feedbackText });
+                      const json = await res.json();
+                      if (json.success) { setFeedbackSent(true); setFeedbackText(""); }
+                    } finally { setSendingFeedback(false); }
+                  }}
+                >
+                  {sendingFeedback ? "Sending…" : "Send"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Page tabs */}
       <div className="border-b bg-white" style={{ borderColor: BORDER }}>
@@ -473,7 +517,7 @@ export default function Dashboard() {
 
       {page === "settings" ? (
         <div className="max-w-5xl mx-auto px-4 py-5">
-          <HubSettings slug={slug} />
+          <HubSettings />
         </div>
       ) : (
       <div className="max-w-5xl mx-auto px-4 py-5 space-y-4">

@@ -451,6 +451,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Authenticated, session-scoped only — takes no slug or id from the
+  // client at all, so it can never return a different healer's data
+  // regardless of what URL the browser happens to be showing.
+  app.get("/api/profile", requireHealer, async (req, res) => {
+    try {
+      const healer = await storage.getHealerById(req.session.user!.healerId);
+      if (!healer) return res.status(404).json({ success: false, error: "Hub not found" });
+      res.json({ success: true, data: publicHealer(healer) });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to load profile" });
+    }
+  });
+
   app.put("/api/profile", requireHealer, async (req, res) => {
     try {
       const { name, tagline, location, whatsapp, avatarUrl, headerImageUrl, shopEnabled, country } = req.body;

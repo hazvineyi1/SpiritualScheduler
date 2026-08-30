@@ -71,6 +71,7 @@ export interface IStorage {
   // public directory fields (never catalogs, appointments, or credentials).
   getHealer(id: number): Promise<Healer | undefined>;
   getHealerBySlug(slug: string): Promise<Healer | undefined>;
+  getHealerById(id: number): Promise<Healer | undefined>;
   getHealerByEmail(email: string): Promise<Healer | undefined>;
   createHealer(data: InsertHealer): Promise<Healer>;
   listHealers(): Promise<Healer[]>;
@@ -344,6 +345,10 @@ export class MemStorage implements IStorage {
 
   async getHealerBySlug(slug: string): Promise<Healer | undefined> {
     return Array.from(this.healers.values()).find(h => h.slug === slug.toLowerCase());
+  }
+
+  async getHealerById(id: number): Promise<Healer | undefined> {
+    return this.healers.get(id);
   }
 
   async getHealerByEmail(email: string): Promise<Healer | undefined> {
