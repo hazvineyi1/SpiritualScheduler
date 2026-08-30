@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
+import { useVisitTracking } from "@/hooks/use-visit-tracking";
 import { ChevronLeft, CheckCircle2, MessageSquareHeart } from "lucide-react";
 
 const BG      = "#f5efe0";
@@ -13,6 +14,7 @@ const GN      = "#2d4a3a";
 const DARK    = "#1c1712";
 
 export default function Feedback() {
+  useVisitTracking("/feedback");
   const [name, setName] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { apiRequest } from "@/lib/queryClient";
+import { useVisitTracking } from "@/hooks/use-visit-tracking";
 import {
   MessageCircle, CalendarCheck, ShieldCheck, Wallet, Clock,
   CheckCircle2, XCircle, ArrowRight, Lock, Gift,
@@ -18,6 +19,7 @@ const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 
 export default function ForHealers() {
+  useVisitTracking("/for-healers");
   const [form, setForm] = useState({ name: "", contact: "", country: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");

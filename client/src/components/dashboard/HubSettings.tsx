@@ -145,6 +145,22 @@ export default function HubSettings({ slug }: { slug: string }) {
             <div>
               <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>WhatsApp number</Label>
               <Input value={profile.whatsapp} onChange={e => setProfile(p => ({ ...p, whatsapp: e.target.value }))} placeholder="263771234567" />
+              <p className="text-[11px] mt-1.5 leading-snug" style={{ color: "#9a8e7e" }}>
+                This is the number your hub connects to — clients message you here, and it's where booking
+                confirmations and "start session" messages go out from. No separate WhatsApp setup needed:
+                just make sure this number, with country code and no spaces or +, has WhatsApp on it.
+              </p>
+              {profile.whatsapp && (
+                <a
+                  href={`https://wa.me/${profile.whatsapp.replace(/\D/g, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] underline inline-block mt-1"
+                  style={{ color: GN }}
+                >
+                  Test it — open a chat to this number on WhatsApp ↗
+                </a>
+              )}
             </div>
           </div>
           <div>

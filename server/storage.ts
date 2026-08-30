@@ -1,8 +1,8 @@
 import {
   type Healer, type InsertHealer, type Appointment, type InsertAppointment,
   type AvailabilityConfig, type UpdateAvailability, type DaySlot, type SlotStatus,
-  type Lead, type InsertLead, type Feedback, type InsertFeedback,
-  healers as healersTable, appointments as appointmentsTable, leads as leadsTable, feedback as feedbackTable,
+  type Lead, type InsertLead, type Feedback, type InsertFeedback, type Visit,
+  healers as healersTable, appointments as appointmentsTable, leads as leadsTable, feedback as feedbackTable, visits as visitsTable,
 } from "@shared/schema";
 import { STARTER_READINGS, STARTER_PRODUCTS, type Reading, type Product } from "@shared/types";
 import { db, ensureSchema } from "./db";
@@ -97,6 +97,12 @@ export interface IStorage {
   // Trial-user feedback — open-ended suggestions, separate from leads.
   createFeedback(data: InsertFeedback): Promise<Feedback>;
   listFeedback(): Promise<Feedback[]>;
+
+  // Visit tracking — city/country and rough duration for demo hubs and
+  // marketing pages, via a start call plus periodic heartbeats.
+  startVisit(path: string, city: string, country: string): Promise<Visit>;
+  heartbeatVisit(id: number): Promise<void>;
+  listVisits(): Promise<Visit[]>;
 }
 
 // A small rotation of nature/heritage images given to new hubs as a starting
@@ -108,10 +114,12 @@ export class MemStorage implements IStorage {
   private appointments: Map<number, Appointment>;
   private leads: Map<number, Lead> = new Map();
   private feedback: Map<number, Feedback> = new Map();
+  private visits: Map<number, Visit> = new Map();
   private healerIds = 1;
   private appointmentIds = 1;
   private leadIds = 1;
   private feedbackIds = 1;
+  private visitIds = 1;
 
   constructor() {
     this.healers = new Map();
@@ -161,7 +169,7 @@ export class MemStorage implements IStorage {
   private elliestratorSeed(): Omit<Healer, "id"> {
     return {
       slug: "elliestrator-botanica",
-      email: "elliestratorbotanica@gmail.com",
+      email: "ellie@ellie.com",
       password: "botanica123",
       name: "Elliestrator Botanica",
       tagline: "Bold Rituals for Real Life",
@@ -170,7 +178,7 @@ export class MemStorage implements IStorage {
       country: "zimbabwe",
       avatarUrl: "/images/elliestrator-avatar.jpg",
       headerImageUrl: "/images/elliestrator-header.jpg",
-      zinathaVerified: false,
+      zinathaVerified: true,
       shopEnabled: true,
       readings: [
         { id: 1, name: "Getting To Know Yourself", category: "Tarot & Card Readings", price: 80, description: "Keys to self-discovery: what makes you unique, how to unlock your magical powers, your creativity, and your compassion.", formats: ["video", "audio", "chat", "async"], isAdult: false, isFixed: false },
@@ -266,6 +274,19 @@ export class MemStorage implements IStorage {
       this.healerIds = Math.max(this.healerIds, ellie.id + 1);
     }
 
+    // One-time correction: Elliestrator Botanica was first seeded with a
+    // placeholder gmail address and no ZINATHA badge; bring an
+    // already-seeded record up to date with the corrected values.
+    const ellieEntry = Array.from(this.healers.entries()).find(([, h]) => h.slug === "elliestrator-botanica");
+    if (ellieEntry) {
+      const [ellieId, ellie] = ellieEntry;
+      if (ellie.email !== "ellie@ellie.com" || !ellie.zinathaVerified) {
+        const updated = { ...ellie, email: "ellie@ellie.com", zinathaVerified: true };
+        this.healers.set(ellieId, updated);
+        await this.persistHealer(updated);
+      }
+    }
+
     // One-time backfill: healers created before the country field existed
     // (namely VaShava, on databases from before this feature) have an empty
     // country. Fix hers specifically so she appears under Zimbabwe on the map.
@@ -292,6 +313,12 @@ export class MemStorage implements IStorage {
     for (const row of feedbackRows) {
       this.feedback.set(row.id, row as Feedback);
       this.feedbackIds = Math.max(this.feedbackIds, row.id + 1);
+    }
+
+    const visitRows = await db.select().from(visitsTable);
+    for (const row of visitRows) {
+      this.visits.set(row.id, row as Visit);
+      this.visitIds = Math.max(this.visitIds, row.id + 1);
     }
   }
 
@@ -618,6 +645,36 @@ export class MemStorage implements IStorage {
 
   async listFeedback(): Promise<Feedback[]> {
     return Array.from(this.feedback.values()).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }
+
+  // ---- Visit tracking ----------------------------------------------------
+  async startVisit(path: string, city: string, country: string): Promise<Visit> {
+    const now = new Date().toISOString();
+    const base = { path, city, country, startedAt: now, lastSeenAt: now };
+    let visit: Visit;
+    if (db) {
+      const [row] = await db.insert(visitsTable).values(base).returning();
+      visit = row as Visit;
+    } else {
+      visit = { id: this.visitIds++, ...base };
+    }
+    this.visits.set(visit.id, visit);
+    this.visitIds = Math.max(this.visitIds, visit.id + 1);
+    return visit;
+  }
+
+  async heartbeatVisit(id: number): Promise<void> {
+    const visit = this.visits.get(id);
+    if (!visit) return;
+    const updated = { ...visit, lastSeenAt: new Date().toISOString() };
+    this.visits.set(id, updated);
+    if (db) {
+      await db.update(visitsTable).set({ lastSeenAt: updated.lastSeenAt }).where(eq(visitsTable.id, id));
+    }
+  }
+
+  async listVisits(): Promise<Visit[]> {
+    return Array.from(this.visits.values()).sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
   }
 }
 

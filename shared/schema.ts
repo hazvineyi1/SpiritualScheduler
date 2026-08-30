@@ -129,6 +129,21 @@ export const insertLeadSchema = z.object({
 export type Lead = typeof leads.$inferSelect;
 export type InsertLead = z.infer<typeof insertLeadSchema>;
 
+// ---- Visit tracking --------------------------------------------------------
+// Lightweight, city/country-level visit tracking for the demo hubs and
+// marketing pages — no cookies, no personal data, just where a visit came
+// from and roughly how long it lasted (via a periodic heartbeat).
+export const visits = pgTable("visits", {
+  id: serial("id").primaryKey(),
+  path: text("path").notNull(),
+  city: text("city").notNull().default(""),
+  country: text("country").notNull().default(""),
+  startedAt: text("started_at").notNull(),
+  lastSeenAt: text("last_seen_at").notNull(),
+});
+
+export type Visit = typeof visits.$inferSelect;
+
 // ---- Trial-user feedback ---------------------------------------------------
 // Open-ended suggestions from anyone trying the platform out. Separate from
 // leads (which are prospects who haven't joined yet).

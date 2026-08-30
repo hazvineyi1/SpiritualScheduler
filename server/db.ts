@@ -72,5 +72,13 @@ export async function ensureSchema() {
       message TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS visits (
+      id SERIAL PRIMARY KEY,
+      path TEXT NOT NULL,
+      city TEXT NOT NULL DEFAULT '',
+      country TEXT NOT NULL DEFAULT '',
+      started_at TEXT NOT NULL,
+      last_seen_at TEXT NOT NULL
+    );
   `);
 }

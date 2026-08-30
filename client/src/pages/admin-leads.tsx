@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronLeft, Inbox, MessageSquareHeart } from "lucide-react";
+import { ChevronLeft, Inbox, MessageSquareHeart, MapPin } from "lucide-react";
 
 const BG      = "#f5efe0";
 const BORDER  = "#c9b896";
@@ -26,10 +26,30 @@ interface FeedbackEntry {
   createdAt: string;
 }
 
+interface VisitEntry {
+  id: number;
+  path: string;
+  city: string;
+  country: string;
+  startedAt: string;
+  lastSeenAt: string;
+}
+
+function formatDuration(startedAt: string, lastSeenAt: string): string {
+  const ms = new Date(lastSeenAt).getTime() - new Date(startedAt).getTime();
+  if (ms < 1000) return "just landed";
+  const totalSeconds = Math.round(ms / 1000);
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  if (mins === 0) return `${secs}s`;
+  return `${mins}m ${secs}s`;
+}
+
 export default function AdminLeads() {
   const [key, setKey] = useState("");
   const [leads, setLeads] = useState<Lead[] | null>(null);
   const [feedback, setFeedback] = useState<FeedbackEntry[] | null>(null);
+  const [visits, setVisits] = useState<VisitEntry[] | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -38,15 +58,18 @@ export default function AdminLeads() {
     setError("");
     setLoading(true);
     try {
-      const [leadsRes, feedbackRes] = await Promise.all([
+      const [leadsRes, feedbackRes, visitsRes] = await Promise.all([
         fetch("/api/leads", { headers: { "x-admin-key": key } }),
         fetch("/api/feedback", { headers: { "x-admin-key": key } }),
+        fetch("/api/visits", { headers: { "x-admin-key": key } }),
       ]);
       const leadsJson = await leadsRes.json();
       const feedbackJson = await feedbackRes.json();
+      const visitsJson = await visitsRes.json();
       if (!leadsJson.success) throw new Error(leadsJson.error || "Failed to load");
       setLeads(leadsJson.data);
       setFeedback(feedbackJson.success ? feedbackJson.data : []);
+      setVisits(visitsJson.success ? visitsJson.data : []);
     } catch (err: any) {
       setError(err.message || "Failed to load");
     } finally {
@@ -62,7 +85,7 @@ export default function AdminLeads() {
         {leads === null ? (
           <>
             <h1 className="text-xl font-semibold mb-1" style={{ color: DARK }}>Admin</h1>
-            <p className="text-sm mb-6" style={{ color: "#6b5f4a" }}>Interest form submissions and trial-user feedback.</p>
+            <p className="text-sm mb-6" style={{ color: "#6b5f4a" }}>Interest form submissions, trial-user feedback, and visit activity.</p>
             <form onSubmit={load} className="bg-white rounded-xl border p-6 max-w-sm space-y-3" style={{ borderColor: BORDER }}>
               <div>
                 <Label className="text-xs mb-1.5 block" style={{ color: "#9a8e7e" }}>Admin key</Label>
@@ -76,6 +99,41 @@ export default function AdminLeads() {
           </>
         ) : (
           <div className="space-y-10">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="h-4 w-4" style={{ color: GN }} />
+                <h2 className="text-lg font-semibold" style={{ color: DARK }}>Visit Activity</h2>
+              </div>
+              <p className="text-xs mb-4" style={{ color: "#9a8e7e" }}>
+                Who's viewed the demo hubs and marketing pages, from where, and roughly how long they stayed.
+                {" "}{(visits ?? []).length} visit{(visits ?? []).length !== 1 ? "s" : ""}
+              </p>
+              {(visits ?? []).length === 0 ? (
+                <div className="bg-white rounded-xl border p-8 text-center" style={{ borderColor: BORDER }}>
+                  <p className="text-sm" style={{ color: "#6b5f4a" }}>No visits recorded yet.</p>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border overflow-hidden" style={{ borderColor: BORDER }}>
+                  <div className="grid grid-cols-4 gap-2 px-4 py-2 text-[10px] font-semibold uppercase tracking-wide" style={{ background: "#f0ece0", color: "#9a8e7e" }}>
+                    <span>Page</span>
+                    <span>Location</span>
+                    <span>When</span>
+                    <span>Duration</span>
+                  </div>
+                  <div className="divide-y" style={{ borderColor: BORDER }}>
+                    {(visits ?? []).map(v => (
+                      <div key={v.id} className="grid grid-cols-4 gap-2 px-4 py-2.5 text-xs items-center">
+                        <span className="font-medium truncate" style={{ color: DARK }}>{v.path}</span>
+                        <span style={{ color: "#6b5f4a" }}>{v.city || v.country ? `${v.city}${v.city && v.country ? ", " : ""}${v.country}` : "Unknown"}</span>
+                        <span style={{ color: "#8a7d6b" }}>{new Date(v.startedAt).toLocaleString()}</span>
+                        <span style={{ color: "#8a7d6b" }}>{formatDuration(v.startedAt, v.lastSeenAt)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Inbox className="h-4 w-4" style={{ color: GN }} />

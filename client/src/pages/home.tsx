@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MapPin, Shield, MessageCircle, Search, ChevronDown, ChevronRight, ShoppingBag, Plus, Minus, Leaf } from "lucide-react";
 import ChatWidget from "@/components/ChatWidget";
+import { useVisitTracking } from "@/hooks/use-visit-tracking";
 
 interface CartItem { id: number; name: string; price: number; qty: number; }
 
@@ -33,6 +34,7 @@ const GOLD   = "#a2532e";
 
 export default function Home() {
   const { slug } = useParams<{ slug: string }>();
+  useVisitTracking(`/${slug}`);
   const { data: healer, isLoading, isError } = useQuery<PublicHealer>({
     queryKey: [`/api/healers/${slug}`],
   });

@@ -3,6 +3,24 @@ import { createServer, type Server } from "http";
 import { storage, SlotUnavailableError, NotFoundError } from "./storage";
 import { insertAppointmentSchema, insertHealerSchema, updateAvailabilitySchema, insertLeadSchema, insertFeedbackSchema } from "@shared/schema";
 import { sendNotificationEmail } from "./services/email";
+
+// Best-effort city/country lookup from an IP address, for visit tracking.
+// Never throws — a failed or rate-limited lookup just means an unknown
+// location, not a broken request.
+async function geolocateIp(ip: string): Promise<{ city: string; country: string }> {
+  const cleaned = ip.replace(/^::ffff:/, "");
+  if (!cleaned || cleaned === "127.0.0.1" || cleaned === "::1" || cleaned.startsWith("10.") || cleaned.startsWith("192.168.")) {
+    return { city: "", country: "" };
+  }
+  try {
+    const res = await fetch(`https://ipapi.co/${cleaned}/json/`, { signal: AbortSignal.timeout(2500) });
+    if (!res.ok) return { city: "", country: "" };
+    const data = await res.json();
+    return { city: data.city || "", country: data.country_name || "" };
+  } catch {
+    return { city: "", country: "" };
+  }
+}
 import { ZodError } from "zod";
 import type { Request, Response, NextFunction } from "express";
 
@@ -153,6 +171,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, data: entries });
     } catch (err) {
       res.status(500).json({ success: false, error: "Failed to fetch feedback" });
+    }
+  });
+
+  // ---- Visit tracking ---------------------------------------------------
+  // Public: called when a demo hub or marketing page loads, and again
+  // periodically (heartbeat) while the visitor stays on it.
+  app.post("/api/visits/start", async (req, res) => {
+    try {
+      const path = typeof req.body?.path === "string" ? req.body.path.slice(0, 200) : "/";
+      const ip = req.ip || "";
+      const { city, country } = await geolocateIp(ip);
+      const visit = await storage.startVisit(path, city, country);
+      res.json({ success: true, data: { id: visit.id } });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to record visit" });
+    }
+  });
+
+  app.post("/api/visits/:id/heartbeat", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isFinite(id)) return res.status(400).json({ success: false, error: "Invalid visit id" });
+      await storage.heartbeatVisit(id);
+      res.json({ success: true });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to update visit" });
+    }
+  });
+
+  app.get("/api/visits", async (req, res) => {
+    const key = req.header("x-admin-key");
+    const expected = process.env.ADMIN_KEY || "vashava-admin-2026";
+    if (!key || key !== expected) {
+      return res.status(401).json({ success: false, error: "Invalid admin key" });
+    }
+    try {
+      const visits = await storage.listVisits();
+      res.json({ success: true, data: visits });
+    } catch (err) {
+      res.status(500).json({ success: false, error: "Failed to fetch visits" });
     }
   });
 
