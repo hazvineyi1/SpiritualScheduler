@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/queryClient";
 import { useVisitTracking } from "@/hooks/use-visit-tracking";
 import {
-  CheckCircle2, ArrowRight, ShieldCheck, MessageCircle, Mail, Play, Pause,
+  CheckCircle2, ArrowRight, ShieldCheck, MessageCircle, Play, Pause,
 } from "lucide-react";
 
 const BG      = "#f5efe0";
@@ -15,7 +15,6 @@ const GN      = "#2d4a3a";
 const DARK    = "#1c1712";
 const GOLD    = "#a2532e";
 
-const SUPPORT_EMAIL = "info@synops-consulting.com";
 const STEP_MS = 2200;
 
 // Quick-cut, TikTok-paced walkthrough: five frames, alternating client and
@@ -272,12 +271,6 @@ export default function ForHealers() {
                 {error && <p className="text-xs mt-2 text-red-200">{error}</p>}
               </>
             )}
-            <p className="text-[11px] mt-3" style={{ color: "#a9c2b5" }}>
-              <a href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent("I'm interested in African Spiritual Hub")}`}
-                className="underline inline-flex items-center gap-1">
-                <Mail className="h-2.5 w-2.5" /> Prefer email? Contact us
-              </a>
-            </p>
           </div>
         </div>
       </section>
